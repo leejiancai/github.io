@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="[toc] 1. 网络（进程）吞吐量观测 sar -n DEV : 用于观察每个网卡的吞吐量、包收发率和使用率等信息。  iftop： 用于观察local和remote连接的吞吐量。常用于定位本地节点与远程节点的数据传输量差别（排序等）  nethogs: 用于观察每个进程的吞吐量，可以用来定位某个进程的异常。并且会输出每个进程每个TCP连接的流量。 例子：    sar -n DEV: sar">
+<meta property="og:type" content="article">
+<meta property="og:title" content="网络问题定位工具">
+<meta property="og:url" content="https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/index.html">
+<meta property="og:site_name" content="LJC博客">
+<meta property="og:description" content="[toc] 1. 网络（进程）吞吐量观测 sar -n DEV : 用于观察每个网卡的吞吐量、包收发率和使用率等信息。  iftop： 用于观察local和remote连接的吞吐量。常用于定位本地节点与远程节点的数据传输量差别（排序等）  nethogs: 用于观察每个进程的吞吐量，可以用来定位某个进程的异常。并且会输出每个进程每个TCP连接的流量。 例子：    sar -n DEV: sar">
+<meta property="og:locale">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/image-20210223230610330.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/image-20210223230610330.png">
+<meta property="article:published_time" content="2021-02-23T14:48:11.000Z">
+<meta property="article:modified_time" content="2021-02-23T15:29:07.916Z">
+<meta property="article:author" content="LJC">
+<meta property="article:tag" content="Networking">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/image-20210223230610330.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>网络问题定位工具</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="LJC博客" type="application/atom+xml" />
+    
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2021/02/23/%E4%BD%BF%E7%94%A8Wireshark%E8%A7%A3%E5%AF%86Chrome%E5%92%8CCurl%E7%9A%84TLS%E5%8C%85/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&text=网络问题定位工具"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&title=网络问题定位工具"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&is_video=false&description=网络问题定位工具"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=网络问题定位工具&body=Check out this article: https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&title=网络问题定位工具"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&title=网络问题定位工具"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&title=网络问题定位工具"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&title=网络问题定位工具"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&name=网络问题定位工具&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&t=网络问题定位工具"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E7%BD%91%E7%BB%9C%EF%BC%88%E8%BF%9B%E7%A8%8B%EF%BC%89%E5%90%9E%E5%90%90%E9%87%8F%E8%A7%82%E6%B5%8B"><span class="toc-number">1.</span> <span class="toc-text">1. 网络（进程）吞吐量观测</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-TCP%E5%92%8CUDP%E7%9A%84%E8%A7%82%E6%B5%8B"><span class="toc-number">2.</span> <span class="toc-text">2. TCP和UDP的观测</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-%E7%BD%91%E5%8D%A1%E7%9A%84%E8%A7%82%E6%B5%8B"><span class="toc-number">3.</span> <span class="toc-text">3. 网卡的观测</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        网络问题定位工具
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">LJC</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-02-23T14:48:11.000Z" itemprop="datePublished">2021-02-23</time>
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/Networking/" rel="tag">Networking</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>[toc]</p>
+<h1 id="1-网络（进程）吞吐量观测"><a href="#1-网络（进程）吞吐量观测" class="headerlink" title="1. 网络（进程）吞吐量观测"></a>1. 网络（进程）吞吐量观测</h1><ul>
+<li><p>sar -n DEV : 用于观察每个网卡的吞吐量、包收发率和使用率等信息。</p>
+</li>
+<li><p>iftop： 用于观察local和remote连接的吞吐量。常用于定位本地节点与远程节点的数据传输量差别（排序等）</p>
+</li>
+<li><p>nethogs: 用于观察每个进程的吞吐量，可以用来定位某个进程的异常。并且会输出每个进程每个TCP连接的流量。</p>
+<p>例子：</p>
+</li>
+</ul>
+<ol>
+<li><p>sar -n DEV: <code>sar -n DEV 1 10 </code>, 参数中1代表打印间隔为1s。10代表打印10次。输出中，IFACE代表网卡。</p>
+<blockquote>
+<p>sar -n DEV 1 10<br>Linux 4.19.0-5-amd64 (*<strong>****</strong>)     2021年02月23日     _x86_64_    (16 CPU)</p>
+<p>22时54分34秒     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil<br>22时54分35秒      eth0      2.00      1.00      0.14      0.10      0.00      0.00      0.00      0.00<br>22时54分35秒   docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00<br>22时54分35秒        lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</p>
+</blockquote>
+</li>
+<li><p>iftop: <code>iftop -n</code>, -n表示输出ip，而不是域名。输出如下</p>
+<p><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/image-20210223230610330.png"></p>
+</li>
+<li><p>nethogs: <code>nethogs eth0</code>, eth0代表指定网卡，也可以不指定网卡，所有网卡都输出</p>
+<p><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/image-20210223230610330.png" alt="image-20210223230610330"></p>
+</li>
+</ol>
+<h1 id="2-TCP和UDP的观测"><a href="#2-TCP和UDP的观测" class="headerlink" title="2. TCP和UDP的观测"></a>2. TCP和UDP的观测</h1><ul>
+<li>统计TCP和UDP统计输出<ul>
+<li><code>ss -s</code></li>
+</ul>
+</li>
+</ul>
+<h1 id="3-网卡的观测"><a href="#3-网卡的观测" class="headerlink" title="3. 网卡的观测"></a>3. 网卡的观测</h1><ul>
+<li><p>列出当前网络命名空间的网卡：<code>ip ad</code></p>
+</li>
+<li><p>网卡的发送（接收）统计、发送错误的统计： <code>ifconfig</code> 或<code>ifconfig -s</code> , -s 参数会让输出更加简洁（当然，也有一部分数据缺失）</p>
+<blockquote>
+<p>ifconfig -s<br>Iface      MTU    RX-OK RX-ERR RX-DRP RX-OVR    TX-OK TX-ERR TX-DRP TX-OVR Flg<br>docker0   1500    43990      0      0 0        215435      0      0      0 BMU<br>eth0      1400  2013035      0     10 0        261414      0      0      0 BMRU<br>lo       65536     7928      0      0 0          7928      0      0      0 LRU</p>
+</blockquote>
+</li>
+<li><p>网卡当前的吞吐量：<code>sar -n DEV 1 10</code></p>
+</li>
+<li></li>
+</ul>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
+  </div>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E7%BD%91%E7%BB%9C%EF%BC%88%E8%BF%9B%E7%A8%8B%EF%BC%89%E5%90%9E%E5%90%90%E9%87%8F%E8%A7%82%E6%B5%8B"><span class="toc-number">1.</span> <span class="toc-text">1. 网络（进程）吞吐量观测</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-TCP%E5%92%8CUDP%E7%9A%84%E8%A7%82%E6%B5%8B"><span class="toc-number">2.</span> <span class="toc-text">2. TCP和UDP的观测</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-%E7%BD%91%E5%8D%A1%E7%9A%84%E8%A7%82%E6%B5%8B"><span class="toc-number">3.</span> <span class="toc-text">3. 网卡的观测</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&text=网络问题定位工具"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&title=网络问题定位工具"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&is_video=false&description=网络问题定位工具"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=网络问题定位工具&body=Check out this article: https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&title=网络问题定位工具"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&title=网络问题定位工具"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&title=网络问题定位工具"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&title=网络问题定位工具"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&name=网络问题定位工具&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/&t=网络问题定位工具"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2099
+    LJC
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GB2KNQXDVP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GB2KNQXDVP');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'https-leejiancai-github-io';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+
+</body>
+</html>

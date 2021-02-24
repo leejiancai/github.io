@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="Go的性能测试Demo12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455package mainimport (	&quot;bytes&quot;	&quot;math&#x2F;rand&quot;	&quot;strings&quot;	&quot;t">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go性能基础测试">
+<meta property="og:url" content="https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/index.html">
+<meta property="og:site_name" content="LJC博客">
+<meta property="og:description" content="Go的性能测试Demo12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455package mainimport (	&quot;bytes&quot;	&quot;math&#x2F;rand&quot;	&quot;strings&quot;	&quot;t">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-02-22T16:10:37.000Z">
+<meta property="article:modified_time" content="2021-02-22T16:13:18.289Z">
+<meta property="article:author" content="LJC">
+<meta property="article:tag" content="Go">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Go性能基础测试</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="LJC博客" type="application/atom+xml" />
+    
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2021/02/23/%E7%BD%91%E7%BB%9C%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2021/02/22/%E5%AD%97%E7%AC%A6%E7%BC%96%E7%A0%81%E6%A0%BC%E5%BC%8F/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&text=Go性能基础测试"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&title=Go性能基础测试"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&is_video=false&description=Go性能基础测试"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Go性能基础测试&body=Check out this article: https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&title=Go性能基础测试"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&title=Go性能基础测试"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&title=Go性能基础测试"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&title=Go性能基础测试"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&name=Go性能基础测试&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&t=Go性能基础测试"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Go%E7%9A%84%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95Demo"><span class="toc-number">1.</span> <span class="toc-text">Go的性能测试Demo</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Go性能基础测试
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">LJC</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-02-22T16:10:37.000Z" itemprop="datePublished">2021-02-23</time>
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/Go/" rel="tag">Go</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h1 id="Go的性能测试Demo"><a href="#Go的性能测试Demo" class="headerlink" title="Go的性能测试Demo"></a>Go的性能测试Demo</h1><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;bytes&quot;</span></span><br><span class="line">	<span class="string">&quot;math/rand&quot;</span></span><br><span class="line">	<span class="string">&quot;strings&quot;</span></span><br><span class="line">	<span class="string">&quot;testing&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> letterBytes = <span class="string">&quot;dfads;joasdjIFIOSHUIOFHwfhjad;fhjSIDphdfads&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">randomString</span><span class="params">(n <span class="keyword">int</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	b := <span class="built_in">make</span>([]<span class="keyword">byte</span>, n)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> i := <span class="keyword">range</span> b &#123;</span><br><span class="line">		b[i]= letterBytes[rand.Intn(<span class="built_in">len</span>(letterBytes))]</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">string</span>(b)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> genString <span class="function"><span class="keyword">func</span><span class="params">(<span class="keyword">int</span>, <span class="keyword">string</span>)</span> <span class="title">string</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">stringsBuilder</span><span class="params">(n <span class="keyword">int</span>, s <span class="keyword">string</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> builder strings.Builder</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; n; i++ &#123;</span><br><span class="line">		builder.WriteString(s)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> builder.String()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">bytesBuffer</span><span class="params">(n <span class="keyword">int</span>, s <span class="keyword">string</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> buf bytes.Buffer</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; n; i++ &#123;</span><br><span class="line">		buf.WriteString(s)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> buf.String()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">benchmark</span><span class="params">(b *testing.B, f genString)</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> s = randomString(<span class="number">20</span>)</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">		f(<span class="number">10000</span>, s)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">BenchmarkStringsBuilderConcat</span><span class="params">(b *testing.B)</span></span> &#123;</span><br><span class="line">	benchmark(b, stringsBuilder)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">BenchmarkBytesBufferConcat</span><span class="params">(b *testing.B)</span></span>  &#123;</span><br><span class="line">	benchmark(b, bytesBuffer)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>运行下面的命令，即可进行基准测试。<code>go test -bench=&quot;.*&quot; -benchmem .</code></p>
+<p>输出如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">goos: darwin</span><br><span class="line">goarch: amd64</span><br><span class="line">pkg: helloWorld</span><br><span class="line">BenchmarkStringsBuilderConcat-8             5256            198909 ns/op         1120229 B/op         25 allocs/op</span><br><span class="line">BenchmarkBytesBufferConcat-8                6309            189714 ns/op          903523 B/op         14 allocs/op</span><br><span class="line">PASS</span><br><span class="line">ok      helloWorld      3.295s</span><br></pre></td></tr></table></figure>
+
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
+  </div>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Go%E7%9A%84%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95Demo"><span class="toc-number">1.</span> <span class="toc-text">Go的性能测试Demo</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&text=Go性能基础测试"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&title=Go性能基础测试"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&is_video=false&description=Go性能基础测试"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Go性能基础测试&body=Check out this article: https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&title=Go性能基础测试"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&title=Go性能基础测试"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&title=Go性能基础测试"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&title=Go性能基础测试"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&name=Go性能基础测试&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/02/23/Go%E6%80%A7%E8%83%BD%E5%9F%BA%E7%A1%80%E6%B5%8B%E8%AF%95/&t=Go性能基础测试"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2099
+    LJC
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GB2KNQXDVP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GB2KNQXDVP');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'https-leejiancai-github-io';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+
+</body>
+</html>

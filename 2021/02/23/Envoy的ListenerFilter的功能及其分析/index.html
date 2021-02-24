@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="1. Listener filters的处理流程envoy支持的listener filter一共有五个  envoy.listener.http_inspector envoy.listener.original_dst envoy.listener.original_src envoy.listener.proxy_protocol envoy.listener.tls_inspector">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Envoy的ListenerFilter的功能及其分析">
+<meta property="og:url" content="https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="LJC博客">
+<meta property="og:description" content="1. Listener filters的处理流程envoy支持的listener filter一共有五个  envoy.listener.http_inspector envoy.listener.original_dst envoy.listener.original_src envoy.listener.proxy_protocol envoy.listener.tls_inspector">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-02-23T02:56:41.000Z">
+<meta property="article:modified_time" content="2021-02-23T02:57:29.379Z">
+<meta property="article:author" content="LJC">
+<meta property="article:tag" content="Envoy">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Envoy的ListenerFilter的功能及其分析</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="LJC博客" type="application/atom+xml" />
+    
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2021/02/23/%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2021/02/23/Envoy%E6%89%A9%E5%B1%95%E5%8A%9F%E8%83%BD%E2%80%94Webassembly/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&text=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&title=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&is_video=false&description=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Envoy的ListenerFilter的功能及其分析&body=Check out this article: https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&title=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&title=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&title=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&title=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&name=Envoy的ListenerFilter的功能及其分析&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&t=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-Listener-filters%E7%9A%84%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">1. Listener filters的处理流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E5%9B%9E%E8%B0%83%E7%9A%84%E8%B0%83%E7%94%A8%E5%A0%86%E6%A0%88"><span class="toc-number">1.1.</span> <span class="toc-text">1.1 回调的调用堆栈</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-listener-read-cb%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.</span> <span class="toc-text">1.2 listener_read_cb的实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-continueFilterChain%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.3.</span> <span class="toc-text">1.3 continueFilterChain的实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-4-listener-filters%E7%9A%84%E6%89%A7%E8%A1%8C%E9%A1%BA%E5%BA%8F"><span class="toc-number">1.4.</span> <span class="toc-text">1.4 listener filters的执行顺序</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-filter%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">2.</span> <span class="toc-text">2. filter的功能</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1envoy-listener-http-inspector%E5%8A%9F%E8%83%BD"><span class="toc-number">2.1.</span> <span class="toc-text">2.1envoy.listener.http_inspector功能</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-1-http-inspector%E7%9A%84onRead%E5%87%BD%E6%95%B0"><span class="toc-number">2.1.1.</span> <span class="toc-text">2.1.1 http inspector的onRead函数</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-envoy-listener-tls-inspector%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">2.2.</span> <span class="toc-text">2.2 envoy.listener.tls_inspector的功能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-envoy-listener-original-dst%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">2.3.</span> <span class="toc-text">2.3 envoy.listener.original_dst的功能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-envoy-listener-original-src%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">2.4.</span> <span class="toc-text">2.4 envoy.listener.original_src的功能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-5-envoy-listener-proxy-protocol%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">2.5.</span> <span class="toc-text">2.5 envoy.listener.proxy_protocol的功能</span></a></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Envoy的ListenerFilter的功能及其分析
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">LJC</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-02-23T02:56:41.000Z" itemprop="datePublished">2021-02-23</time>
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/Envoy/" rel="tag">Envoy</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h2 id="1-Listener-filters的处理流程"><a href="#1-Listener-filters的处理流程" class="headerlink" title="1. Listener filters的处理流程"></a>1. Listener filters的处理流程</h2><p>envoy支持的listener filter一共有五个</p>
+<ol>
+<li>envoy.listener.http_inspector</li>
+<li>envoy.listener.original_dst</li>
+<li>envoy.listener.original_src</li>
+<li>envoy.listener.proxy_protocol</li>
+<li>envoy.listener.tls_inspector</li>
+</ol>
+<p><strong>注意：</strong>我们下面讨论到的filter指的都是listener filter。</p>
+<h3 id="1-1-回调的调用堆栈"><a href="#1-1-回调的调用堆栈" class="headerlink" title="1.1 回调的调用堆栈"></a>1.1 回调的调用堆栈</h3><p>首先看一下listener监听的socket回调时候的堆栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">#0  Envoy::Server::ConnectionHandlerImpl::ActiveTcpSocket::continueFilterChain (this&#x3D;0x555559ae3810, success&#x3D;true)</span><br><span class="line">    at source&#x2F;server&#x2F;connection_handler_impl.cc:204</span><br><span class="line">#1  0x0000555557c20fa2 in Envoy::Server::ConnectionHandlerImpl::ActiveTcpListener::onAcceptWorker (</span><br><span class="line">    this&#x3D;0x555559b0e300, socket&#x3D;..., hand_off_restored_destination_connections&#x3D;false, rebalanced&#x3D;false)</span><br><span class="line">    at source&#x2F;server&#x2F;connection_handler_impl.cc:293</span><br><span class="line">#2  0x0000555557c21730 in Envoy::Server::ConnectionHandlerImpl::ActiveTcpListener::onAccept (this&#x3D;0x555559b0e300,</span><br><span class="line">    socket&#x3D;...) at source&#x2F;server&#x2F;connection_handler_impl.cc:273</span><br><span class="line">#3  0x0000555557c5d69f in Envoy::Network::ListenerImpl::listenCallback (fd&#x3D;46, remote_addr&#x3D;0x7fffeebd8508,</span><br><span class="line">    remote_addr_len&#x3D;16, arg&#x3D;0x555559b09bc0) at source&#x2F;common&#x2F;network&#x2F;listener_impl.cc:46</span><br><span class="line">#4  0x000055555834d4b9 in listener_read_cb (fd&#x3D;47, what&#x3D;2, p&#x3D;0x555559afce70)</span><br></pre></td></tr></table></figure>
+
+<p>重点关注#0的continueFilterChain和#4的listener_read_cb。详见1.2和1.3。</p>
+<h3 id="1-2-listener-read-cb的实现"><a href="#1-2-listener-read-cb的实现" class="headerlink" title="1.2 listener_read_cb的实现"></a>1.2 listener_read_cb的实现</h3><p>libevent的源码中listener_read_cb的实现大致是：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">static void</span><br><span class="line">listener_read_cb(evutil_socket_t fd, short what, void *p)</span><br><span class="line">&#123;</span><br><span class="line">    ...省略</span><br><span class="line">	while (1) &#123;</span><br><span class="line">		struct sockaddr_storage ss;</span><br><span class="line">		ev_socklen_t socklen &#x3D; sizeof(ss);</span><br><span class="line">		evutil_socket_t new_fd &#x3D; evutil_accept4_(fd, (struct sockaddr*)&amp;ss, &amp;socklen, lev-&gt;accept4_flags);</span><br><span class="line">		if (new_fd &lt; 0)</span><br><span class="line">			break;</span><br><span class="line">		if (socklen &#x3D;&#x3D; 0) &#123;</span><br><span class="line">			&#x2F;* This can happen with some older linux kernels in</span><br><span class="line">			 * response to nmap. *&#x2F;</span><br><span class="line">			evutil_closesocket(new_fd);</span><br><span class="line">			continue;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">        ...省略</span><br><span class="line">		++lev-&gt;refcnt;</span><br><span class="line">		cb &#x3D; lev-&gt;cb;</span><br><span class="line">		user_data &#x3D; lev-&gt;user_data;</span><br><span class="line">		UNLOCK(lev);</span><br><span class="line">		cb(lev, new_fd, (struct sockaddr*)&amp;ss, (int)socklen,</span><br><span class="line">		    user_data);</span><br><span class="line">	    ...省略</span><br><span class="line">	&#125;</span><br><span class="line">    ...省略</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>listen的socket收到读事件后，调用accept生成一个新的socket（新连接的socket）然后执行回调cb（#3的listenCallback）。</p>
+<h3 id="1-3-continueFilterChain的实现"><a href="#1-3-continueFilterChain的实现" class="headerlink" title="1.3 continueFilterChain的实现"></a>1.3 continueFilterChain的实现</h3><p>continueFilterChain是取出当前listener配置的所有listener_fileters，按照配置的顺序执行每个filter，如果某个filter需要的数据（data）的数量（字节数）还不够，当前的循环会被中断，在这个filter内部会重新注册一个事件去监听socket的读事件。等到新的读事件来。continueFilterChain的处理具体逻辑先不具体讲，后面2.1讲http_inspector的时候再回头讲。</p>
+<p>如果所有的filter执行（执行是调用每个filter的onAccept函数）都没问题，就行执行newConnection()创建一个新的connection（这里的连接不是tcp连接，而是envoy内的概念）。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> ConnectionHandlerImpl::ActiveTcpSocket::continueFilterChain(<span class="keyword">bool</span> success) &#123;</span><br><span class="line">  <span class="keyword">if</span> (success) &#123;</span><br><span class="line">    <span class="keyword">bool</span> no_error = <span class="literal">true</span>;</span><br><span class="line">	<span class="comment">//重新开始执行循环？？ 下面有一行代码在退出前，执行了iter_ = accept_filters_.end();</span></span><br><span class="line">    <span class="keyword">if</span> (iter_ == accept_filters_.end()) &#123;</span><br><span class="line">      iter_ = accept_filters_.begin();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      iter_ = <span class="built_in">std</span>::next(iter_);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (; iter_ != accept_filters_.end(); iter_++) &#123;</span><br><span class="line">      Network::FilterStatus status = (*iter_)-&gt;onAccept(*<span class="keyword">this</span>);</span><br><span class="line">      <span class="keyword">if</span> (status == Network::FilterStatus::StopIteration) &#123;</span><br><span class="line">        <span class="comment">// The filter is responsible for calling us again at a later time to continue the filter</span></span><br><span class="line">        <span class="comment">// chain from the next filter.</span></span><br><span class="line">        <span class="comment">// 有的listener_filter需要执行完后中断本次循环</span></span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (!socket().ioHandle().isOpen()) &#123;</span><br><span class="line">          <span class="comment">// break the loop but should not create new connection</span></span><br><span class="line">          no_error = <span class="literal">false</span>;</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="comment">// Blocking at the filter but no error</span></span><br><span class="line">          <span class="comment">// return 调用栈退出，等待下一个事件的到来（本次事件处理结束，把CPU让给event_base)</span></span><br><span class="line">          <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// Successfully ran all the accept filters.</span></span><br><span class="line">    <span class="keyword">if</span> (no_error) &#123;</span><br><span class="line">      newConnection();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// Signal the caller that no extra filter chain iteration is needed.</span></span><br><span class="line">      iter_ = accept_filters_.end();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Filter execution concluded, unlink and delete this ActiveTcpSocket if it was linked.</span></span><br><span class="line">  <span class="keyword">if</span> (inserted()) &#123;</span><br><span class="line">  	<span class="comment">// 删除ActiveTcpSocket对象，这个连接已经断了</span></span><br><span class="line">    unlink();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-4-listener-filters的执行顺序"><a href="#1-4-listener-filters的执行顺序" class="headerlink" title="1.4 listener filters的执行顺序"></a>1.4 listener filters的执行顺序</h3><p>在listener的配置中，listener filters的配置是在一个数组中的，如</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&quot;listenerFilters&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">        &quot;name&quot;: &quot;envoy.listener.tls_inspector&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        &quot;name&quot;: &quot;envoy.listener.http_inspector&quot;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>首先执行的是tls_inspector再到http_inspector。</p>
+<h2 id="2-filter的功能"><a href="#2-filter的功能" class="headerlink" title="2. filter的功能"></a>2. filter的功能</h2><h3 id="2-1envoy-listener-http-inspector功能"><a href="#2-1envoy-listener-http-inspector功能" class="headerlink" title="2.1envoy.listener.http_inspector功能"></a>2.1envoy.listener.http_inspector功能</h3><p>http_inspector的功能是：检查是否是HTTP的请求（HTTP需要是RawBuffer,不是RawBuffer，这个逻辑执行会退出，继续执行下一个filter的逻辑。 RawBuffer是没有经过加密的，换言之是不是TLS、也不是QUIC）。HTTP的请求类型包括：HTTP/1.0、 HTTP/1.1和HTTP/2（h2c)。如果不是HTTP请求，这个filter也不会截流，直接交到下一个filter处理。</p>
+<p>来看一下具体实现的代码看continueFilterChain和http_inspector的onAccept代码：</p>
+<p>在continueFilterChain的代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">for (; iter_ !&#x3D; accept_filters_.end(); iter_++) &#123;</span><br><span class="line">  Network::FilterStatus status &#x3D; (*iter_)-&gt;onAccept(*this);</span><br><span class="line">  if (status &#x3D;&#x3D; Network::FilterStatus::StopIteration) &#123;</span><br><span class="line">   </span><br><span class="line">    if (!socket().ioHandle().isOpen()) &#123;</span><br><span class="line">      &#x2F;&#x2F; break the loop but should not create new connection</span><br><span class="line">      no_error &#x3D; false;</span><br><span class="line">      break;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">      &#x2F;&#x2F; Blocking at the filter but no error</span><br><span class="line">      &#x2F;&#x2F; return 调用栈退出，等待下一个事件的到来（本次事件处理结束，把CPU让给event_base)</span><br><span class="line">      return;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>在continueFilterChain的(*iter_)-&gt;onAccept(*this)中执行到了http_inspector的onAccept代码。如果http_inspector返回Network::FilterStatus::StopIteration，那么这个事件的回调暂时return掉，直接退出了。http_inspector返回Network::FilterStatus::StopIteration之前做的一件事就是注册一个回调函数cb（cb最终还是会调用continueFilterChain函数）等待这个TCP连接的下一个事件到来时候重新执行cb。</p>
+<p>http_inspector的onAccept代码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">Network::FilterStatus Filter::onAccept(Network::ListenerFilterCallbacks&amp; cb) &#123;</span><br><span class="line">  ENVOY_LOG(debug, &quot;http inspector: new connection accepted&quot;);</span><br><span class="line"></span><br><span class="line">  const Network::ConnectionSocket&amp; socket &#x3D; cb.socket();</span><br><span class="line"></span><br><span class="line">  const absl::string_view transport_protocol &#x3D; socket.detectedTransportProtocol();</span><br><span class="line">  &#x2F;&#x2F; 如果有其他listener filter设置了这个不是HTTP（RawBuffer是指HTTP）</span><br><span class="line">  if (!transport_protocol.empty() &amp;&amp;</span><br><span class="line">      transport_protocol !&#x3D; TransportSockets::TransportProtocolNames::get().RawBuffer) &#123;</span><br><span class="line">    ENVOY_LOG(trace, &quot;http inspector: cannot inspect http protocol with transport socket &#123;&#125;&quot;,</span><br><span class="line">              transport_protocol);</span><br><span class="line">    return Network::FilterStatus::Continue;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  cb_ &#x3D; &amp;cb;</span><br><span class="line">  const ParseState parse_state &#x3D; onRead();</span><br><span class="line">  switch (parse_state) &#123;</span><br><span class="line">  case ParseState::Error:</span><br><span class="line">    &#x2F;&#x2F; As per discussion in https:&#x2F;&#x2F;github.com&#x2F;envoyproxy&#x2F;envoy&#x2F;issues&#x2F;7864</span><br><span class="line">    &#x2F;&#x2F; we don&#39;t add new enum in FilterStatus so we have to signal the caller</span><br><span class="line">    &#x2F;&#x2F; the new condition.</span><br><span class="line">    cb.socket().close();</span><br><span class="line">    return Network::FilterStatus::StopIteration;</span><br><span class="line">  case ParseState::Done:</span><br><span class="line">    return Network::FilterStatus::Continue;</span><br><span class="line">  case ParseState::Continue:</span><br><span class="line">    &#x2F;&#x2F; do nothing but create the event</span><br><span class="line">    ASSERT(file_event_ &#x3D;&#x3D; nullptr);</span><br><span class="line">    file_event_ &#x3D; cb.dispatcher().createFileEvent(</span><br><span class="line">        socket.ioHandle().fd(),</span><br><span class="line">        [this](uint32_t events) &#123;</span><br><span class="line">         ..省略回调函数的实现</span><br><span class="line">        &#125;,</span><br><span class="line">        Event::FileTriggerType::Edge, Event::FileReadyType::Read | Event::FileReadyType::Closed);</span><br><span class="line">    return Network::FilterStatus::StopIteration;</span><br><span class="line">  &#125;</span><br><span class="line">  NOT_REACHED_GCOVR_EXCL_LINE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里我们重点关注：</p>
+<ul>
+<li>onRead()</li>
+<li>cb.dispatcher().createFileEvent(）</li>
+</ul>
+<p>其中，onRead（详见2.1.1）做的事情就是读取(peek)当前连接的数据包（data），然后看看是不是HTTP的请求（具体实现是读取最大8K的数据，然后查看第一行的数据（每行一\r\n结尾））是否是一个HTTP的请求。</p>
+<ul>
+<li>如果还没读到第一行数据，并且数据没有8K，onRead就会返回ParseState::Continue。（前面讲过，http_inspector有没有检测到HTTP请求不重要，都不会截流，因此这里只关心是否读到第一行数据）</li>
+<li>如果读到了第一行数据，onRead就会返回ParseState::Done，onAccept就会返回Network::FilterStatus::Continue，继续执行下一个filter的逻辑。</li>
+</ul>
+<p>我们重点关注没有读到第一行数据的情况，没有读到第一行后，onAccpet就会执行cb.dispatcher().createFileEvent（）创建一个监听read和closed的事件。注册完事件监听后，返回一个Network::FilterStatus::StopIteration让continueFilterChain让出当前的CPU（执行return）。因为cb.dispatcher().createFileEvent（）已经注册过回调函数了，下次新连接有事件到的时候，会有回调函数会被执行的。</p>
+<p>刚刚注册的回调函数就是如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">ENVOY_LOG(trace, &quot;http inspector event: &#123;&#125;&quot;, events);</span><br><span class="line">&#x2F;&#x2F; inspector is always peeking and can never determine EOF.</span><br><span class="line">&#x2F;&#x2F; Use this event type to avoid listener timeout on the OS supporting</span><br><span class="line">&#x2F;&#x2F; FileReadyType::Closed.</span><br><span class="line">bool end_stream &#x3D; events &amp; Event::FileReadyType::Closed;</span><br><span class="line"></span><br><span class="line">const ParseState parse_state &#x3D; onRead();</span><br><span class="line">switch (parse_state) &#123;</span><br><span class="line">case ParseState::Error:</span><br><span class="line">file_event_.reset();</span><br><span class="line">cb_-&gt;continueFilterChain(false);</span><br><span class="line">break;</span><br><span class="line">case ParseState::Done:</span><br><span class="line">  &#x2F;&#x2F; file_event_.reset掉，表明这个listener_filter已经处理完了本次的所有逻辑，就算没有检测到HTTP的版本，也是不会报错的。</span><br><span class="line">&#x2F;&#x2F; reset会删除事件，释放内存时候调用ImplBase的析构函数</span><br><span class="line">file_event_.reset();</span><br><span class="line">&#x2F;&#x2F; Do not skip following listener filters.</span><br><span class="line">cb_-&gt;continueFilterChain(true);</span><br><span class="line">break;</span><br><span class="line">case ParseState::Continue:</span><br><span class="line">if (end_stream) &#123;</span><br><span class="line">  &#x2F;&#x2F; Parser fails to determine http but the end of stream is reached. Fallback to</span><br><span class="line">  &#x2F;&#x2F; non-http.</span><br><span class="line">  done(false);</span><br><span class="line">  file_event_.reset();</span><br><span class="line">  cb_-&gt;continueFilterChain(true);</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F; do nothing but wait for the next event</span><br><span class="line">&#x2F;&#x2F; 这里面的break相当于return掉函数，直接等待下一个事件（正常是读事件，除非客户端close掉了连接）</span><br><span class="line">break;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>重点是内部再次执行onRead函数，读取第一行数据，如果读取到了，就调用cb_-&gt;continueFilterChain(true)重新回到下一个filter的执行逻辑中（这里又回到了continueFilterChain的逻辑了）。如果还是读不到第一行数据，就暂时return掉本次的回调，再次等到事件的到来。总之，这个filter一定会等到第一行的数据读取到（或者超过8K的数据）才执行下一个的filter的onAccept(如果配置了的话)</p>
+<p>因此，这里就回答了continueFilterChain为什么会被多次调用的问题了。因为如果filter要读取更多的数据去决策，但是当前的数据还不够决策的时候，只能让出当前的执行CPU，等到下一次事件到来时候再去判断，再在回调函数中执行continueFilterChain函数。</p>
+<h4 id="2-1-1-http-inspector的onRead函数"><a href="#2-1-1-http-inspector的onRead函数" class="headerlink" title="2.1.1 http inspector的onRead函数"></a>2.1.1 http inspector的onRead函数</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">ParseState Filter::onRead() &#123;</span><br><span class="line">  auto&amp; os_syscalls &#x3D; Api::OsSysCallsSingleton::get();</span><br><span class="line">  const Network::ConnectionSocket&amp; socket &#x3D; cb_-&gt;socket();</span><br><span class="line">  const Api::SysCallSizeResult result &#x3D;</span><br><span class="line">      os_syscalls.recv(socket.ioHandle().fd(), buf_, Config::MAX_INSPECT_SIZE, MSG_PEEK);</span><br><span class="line">  ENVOY_LOG(trace, &quot;http inspector: recv: &#123;&#125;&quot;, result.rc_);</span><br><span class="line">  if (result.rc_ &#x3D;&#x3D; -1 &amp;&amp; result.errno_ &#x3D;&#x3D; EAGAIN) &#123;</span><br><span class="line">    return ParseState::Continue;</span><br><span class="line">  &#125; else if (result.rc_ &lt; 0) &#123;</span><br><span class="line">    config_-&gt;stats().read_error_.inc();</span><br><span class="line">    return ParseState::Error;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  const auto parse_state &#x3D;</span><br><span class="line">      parseHttpHeader(absl::string_view(reinterpret_cast&lt;const char*&gt;(buf_), result.rc_));</span><br><span class="line">  switch (parse_state) &#123;</span><br><span class="line">  case ParseState::Continue:</span><br><span class="line">    &#x2F;&#x2F; do nothing but wait for the next event</span><br><span class="line">    return ParseState::Continue;</span><br><span class="line">  case ParseState::Error:</span><br><span class="line">    done(false);</span><br><span class="line">    return ParseState::Done;</span><br><span class="line">  case ParseState::Done:</span><br><span class="line">    done(true);</span><br><span class="line">    return ParseState::Done;</span><br><span class="line">  &#125;</span><br><span class="line">  NOT_REACHED_GCOVR_EXCL_LINE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其实就是PEEK一下当前的连接的数据包（并不是真正读取出来，然后执行parseHttpHeader的函数（具体不再深入，怎么判断一个请求是HTTP请求了）。</p>
+<h3 id="2-2-envoy-listener-tls-inspector的功能"><a href="#2-2-envoy-listener-tls-inspector的功能" class="headerlink" title="2.2 envoy.listener.tls_inspector的功能"></a>2.2 envoy.listener.tls_inspector的功能</h3><p>tls的处理逻辑跟http inspector大同小异，也是通过读取一些数据来判断，跟continueFilterChain的交互流程相似，不再细说，下面只讨论功能。</p>
+<p><strong>功能：</strong>检查是否是tls的请求，如果是tls请求则:</p>
+<ol>
+<li>设置当前的requestServerName</li>
+</ol>
+<blockquote>
+<p>cb_-&gt;socket().setRequestedServerName(name);</p>
+</blockquote>
+<ol start="2">
+<li>这是transportProtocol为TLS</li>
+</ol>
+<blockquote>
+<p>cb_-&gt;socket().setDetectedTransportProtocol(<br>        TransportSockets::TransportProtocolNames::get().Tls);</p>
+</blockquote>
+<p>如果不是tls请求，则跳过（认为没有问题），不会因为这个请求没有加密（tls）就不让请求通过</p>
+<h3 id="2-3-envoy-listener-original-dst的功能"><a href="#2-3-envoy-listener-original-dst的功能" class="headerlink" title="2.3 envoy.listener.original_dst的功能"></a>2.3 envoy.listener.original_dst的功能</h3><p>功能：获取原始的目的地址，修改local_address(因为envoy的local地址就是客户端的dst地址）</p>
+<p>代码逻辑比较简单，不需要读取数据，只需要看当前连接的一些信息就可以了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">Network::FilterStatus OriginalDstFilter::onAccept(Network::ListenerFilterCallbacks&amp; cb) &#123;</span><br><span class="line">  ENVOY_LOG(debug, &quot;original_dst: New connection accepted&quot;);</span><br><span class="line">  Network::ConnectionSocket&amp; socket &#x3D; cb.socket();</span><br><span class="line">  const Network::Address::Instance&amp; local_address &#x3D; *socket.localAddress();</span><br><span class="line"></span><br><span class="line">  if (local_address.type() &#x3D;&#x3D; Network::Address::Type::Ip) &#123;</span><br><span class="line">    Network::Address::InstanceConstSharedPtr original_local_address &#x3D;</span><br><span class="line">        getOriginalDst(socket.ioHandle().fd());</span><br><span class="line"></span><br><span class="line">    &#x2F;&#x2F; A listener that has the use_original_dst flag set to true can still receive</span><br><span class="line">    &#x2F;&#x2F; connections that are NOT redirected using iptables. If a connection was not redirected,</span><br><span class="line">    &#x2F;&#x2F; the address returned by getOriginalDst() matches the local address of the new socket.</span><br><span class="line">    &#x2F;&#x2F; In this case the listener handles the connection directly and does not hand it off.</span><br><span class="line">    if (original_local_address) &#123;</span><br><span class="line">      &#x2F;&#x2F; Restore the local address to the original one.</span><br><span class="line">      socket.restoreLocalAddress(original_local_address);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  return Network::FilterStatus::Continue;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>重点关注</p>
+<ul>
+<li>original_local_address =<pre><code>getOriginalDst(socket.ioHandle().fd())
+</code></pre>
+</li>
+<li>socket.restoreLocalAddress(original_local_address);</li>
+</ul>
+<p>流程就是获取原来的目的地址（只有经过DNAT或REDIRECT才有原来的目的地址），如果获取到了原来的目的地址，就把当前连接的localAddress设置为原来的目的地址。localAddress其实就是envoy这边的连接地址，如果这个连接是经过DNAT（举例），然后又设置了这个filter，那么在envoy内部的元数据localAddress就改为原来的目的地址。</p>
+<h3 id="2-4-envoy-listener-original-src的功能"><a href="#2-4-envoy-listener-original-src的功能" class="headerlink" title="2.4 envoy.listener.original_src的功能"></a>2.4 envoy.listener.original_src的功能</h3><p>数据的走向可以简化为：</p>
+<blockquote>
+<p>downstream &lt;–&gt; envoy &lt;–&gt; upstream</p>
+</blockquote>
+<p>代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">OriginalSrcFilter::OriginalSrcFilter(const Config&amp; config) : config_(config) &#123;&#125;</span><br><span class="line"></span><br><span class="line">Network::FilterStatus OriginalSrcFilter::onAccept(Network::ListenerFilterCallbacks&amp; cb) &#123;</span><br><span class="line">  auto&amp; socket &#x3D; cb.socket();</span><br><span class="line">  auto address &#x3D; socket.remoteAddress();</span><br><span class="line">  ASSERT(address);</span><br><span class="line"></span><br><span class="line">  ENVOY_LOG(debug,</span><br><span class="line">            &quot;Got a new connection in the original_src filter for address &#123;&#125;. Marking with &#123;&#125;&quot;,</span><br><span class="line">            address-&gt;asString(), config_.mark());</span><br><span class="line"></span><br><span class="line">  if (address-&gt;type() !&#x3D; Network::Address::Type::Ip) &#123;</span><br><span class="line">    &#x2F;&#x2F; nothing we can do with this.</span><br><span class="line">    return Network::FilterStatus::Continue;</span><br><span class="line">  &#125;</span><br><span class="line">  auto options_to_add &#x3D;</span><br><span class="line">      Filters::Common::OriginalSrc::buildOriginalSrcOptions(std::move(address), config_.mark());</span><br><span class="line">  socket.addOptions(std::move(options_to_add));</span><br><span class="line">  return Network::FilterStatus::Continue;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>重点关注buildOriginalSrcOptions设置了和socket.addOptions。配置了一些socket的参数（没细看）使得envoy连接到upstream的时候使用的源ip地址变成downstream的地址，这样upstream就认为请求是downstream发送过来的。</p>
+<p>官网上的功能描述比较详细：</p>
+<ol>
+<li>使用downstream的地址情况</li>
+</ol>
+<blockquote>
+<p>The original source listener filter replicates the downstream remote address of the connection on the upstream side of Envoy. For example, if a downstream connection connects to Envoy with IP address 10.1.2.3, then Envoy will connect to the upstream with source IP 10.1.2.3.</p>
+</blockquote>
+<ol start="2">
+<li>使用pp包内部的地址情况<br>另外还有一个就是proxy Protocol和这个filter的配合使用</li>
+</ol>
+<blockquote>
+<p>Interaction with Proxy Protocol<br>If the connection has not had its source address translated or proxied, then Envoy can simply use the existing connection information to build the correct downstream remote address. However, if this is not true, a Proxy Protocol filter may be used to extract the downstream remote address.</p>
+</blockquote>
+<p>也就是说，如果这个listener配置了original_src和proxy_protocol（这个先配置），那么连接到upstream时候使用的源地址改为pp包内的地址。</p>
+<h3 id="2-5-envoy-listener-proxy-protocol的功能"><a href="#2-5-envoy-listener-proxy-protocol的功能" class="headerlink" title="2.5 envoy.listener.proxy_protocol的功能"></a>2.5 envoy.listener.proxy_protocol的功能</h3><p>功能：读取（首先是PEEK，如果PEEK到时发现是pp包就真正读取出来）连接的数据，获取到真正的源ip和源端口。需要注意的是：<strong>如果配置了这个filter，一定要带proxy protocol</strong>，不然正常的访问会得到（识别不到请求）</p>
+<blockquote>
+<p>lijiancai@LAPTOP-U28497J3:~$curl <a target="_blank" rel="noopener" href="http://192.168.42.128:78/">http://192.168.42.128:78</a></p>
+<p>curl: (52) Empty reply from server</p>
+</blockquote>
+<p>这个就是proxy_protocol与其他四个filter不一样的地方，其他四个filter不会截流，这个filter会（当然是只有在没有识别到pp包的情况下会截流）</p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
+  </div>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-Listener-filters%E7%9A%84%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">1. Listener filters的处理流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E5%9B%9E%E8%B0%83%E7%9A%84%E8%B0%83%E7%94%A8%E5%A0%86%E6%A0%88"><span class="toc-number">1.1.</span> <span class="toc-text">1.1 回调的调用堆栈</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-listener-read-cb%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.</span> <span class="toc-text">1.2 listener_read_cb的实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-continueFilterChain%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.3.</span> <span class="toc-text">1.3 continueFilterChain的实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-4-listener-filters%E7%9A%84%E6%89%A7%E8%A1%8C%E9%A1%BA%E5%BA%8F"><span class="toc-number">1.4.</span> <span class="toc-text">1.4 listener filters的执行顺序</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-filter%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">2.</span> <span class="toc-text">2. filter的功能</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1envoy-listener-http-inspector%E5%8A%9F%E8%83%BD"><span class="toc-number">2.1.</span> <span class="toc-text">2.1envoy.listener.http_inspector功能</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-1-http-inspector%E7%9A%84onRead%E5%87%BD%E6%95%B0"><span class="toc-number">2.1.1.</span> <span class="toc-text">2.1.1 http inspector的onRead函数</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-envoy-listener-tls-inspector%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">2.2.</span> <span class="toc-text">2.2 envoy.listener.tls_inspector的功能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-envoy-listener-original-dst%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">2.3.</span> <span class="toc-text">2.3 envoy.listener.original_dst的功能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-envoy-listener-original-src%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">2.4.</span> <span class="toc-text">2.4 envoy.listener.original_src的功能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-5-envoy-listener-proxy-protocol%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">2.5.</span> <span class="toc-text">2.5 envoy.listener.proxy_protocol的功能</span></a></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&text=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&title=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&is_video=false&description=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Envoy的ListenerFilter的功能及其分析&body=Check out this article: https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&title=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&title=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&title=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&title=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&name=Envoy的ListenerFilter的功能及其分析&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/02/23/Envoy%E7%9A%84ListenerFilter%E7%9A%84%E5%8A%9F%E8%83%BD%E5%8F%8A%E5%85%B6%E5%88%86%E6%9E%90/&t=Envoy的ListenerFilter的功能及其分析"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2099
+    LJC
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GB2KNQXDVP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GB2KNQXDVP');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'https-leejiancai-github-io';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+
+</body>
+</html>
