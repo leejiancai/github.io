@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="First sight of iptables​          内核防火墙模块（或者Netfilter）提供了相关的机制去管理网络防火墙，iptables就是这样一个用户态的工具，提供了一系列的接口，使得用户可以使用内核提供的能力。  ​    举个例子，使用iptables禁用所有的端口的tcp连接，除了22端口外。 12iptables -t filter -A INPUT -p tcp">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iptables">
+<meta property="og:url" content="https://leejiancai.github.io/2020/06/06/iptables/index.html">
+<meta property="og:site_name" content="LJC博客">
+<meta property="og:description" content="First sight of iptables​          内核防火墙模块（或者Netfilter）提供了相关的机制去管理网络防火墙，iptables就是这样一个用户态的工具，提供了一系列的接口，使得用户可以使用内核提供的能力。  ​    举个例子，使用iptables禁用所有的端口的tcp连接，除了22端口外。 12iptables -t filter -A INPUT -p tcp">
+<meta property="og:locale">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20190609174841.png">
+<meta property="article:published_time" content="2020-06-06T21:09:32.000Z">
+<meta property="article:modified_time" content="2021-02-26T08:08:37.677Z">
+<meta property="article:author" content="LJC">
+<meta property="article:tag" content="networking">
+<meta property="article:tag" content="tool">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20190609174841.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>iptables</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="LJC博客" type="application/atom+xml" />
+    
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2020/06/09/tcp-protocol/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2020/06/06/iptables/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2020/06/06/iptables/&text=iptables"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2020/06/06/iptables/&title=iptables"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2020/06/06/iptables/&is_video=false&description=iptables"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=iptables&body=Check out this article: https://leejiancai.github.io/2020/06/06/iptables/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2020/06/06/iptables/&title=iptables"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2020/06/06/iptables/&title=iptables"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2020/06/06/iptables/&title=iptables"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2020/06/06/iptables/&title=iptables"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2020/06/06/iptables/&name=iptables&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2020/06/06/iptables/&t=iptables"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#First-sight-of-iptables"><span class="toc-number">1.</span> <span class="toc-text">First sight of iptables</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#iptables%E7%9A%84%E4%B8%89%E8%A1%A8%E4%BA%94%E9%93%BE"><span class="toc-number">2.</span> <span class="toc-text">iptables的三表五链</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#netfilter%E6%8F%90%E4%BE%9B%E7%9A%84hook"><span class="toc-number">2.1.</span> <span class="toc-text">netfilter提供的hook</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%94%E9%93%BE"><span class="toc-number">2.2.</span> <span class="toc-text">五链</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%9B%AE%E6%A0%87-target"><span class="toc-number">3.</span> <span class="toc-text">目标 target</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8A%A8%E4%BD%9C"><span class="toc-number">3.1.</span> <span class="toc-text">动作</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E7%B1%BB%E5%8A%A8%E4%BD%9C%EF%BC%9AACCEPT%E3%80%81DROP%E3%80%81DENY%E3%80%81-RETURN"><span class="toc-number">3.1.1.</span> <span class="toc-text">第一类动作：ACCEPT、DROP、DENY、 RETURN</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E7%B1%BB%E5%8A%A8%E4%BD%9C-LOG"><span class="toc-number">3.1.2.</span> <span class="toc-text">第二类动作: LOG</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%AC%AC%E4%B8%89%E7%B1%BB%E5%8A%A8%E4%BD%9C%E5%B0%B1%E6%98%AF%E5%9C%B0%E5%9D%80%E7%9A%84%E8%BD%AC%E6%8D%A2%EF%BC%9ASNAT%E3%80%81DNAT%E3%80%81MASQUERADE"><span class="toc-number">3.1.3.</span> <span class="toc-text">第三类动作就是地址的转换：SNAT、DNAT、MASQUERADE</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%9A%84%E9%93%BE"><span class="toc-number">3.2.</span> <span class="toc-text">自定义的链</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#policy"><span class="toc-number">4.</span> <span class="toc-text">policy</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C"><span class="toc-number">5.</span> <span class="toc-text">常用的命令行</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#raw%E8%A1%A8%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="toc-number">5.1.</span> <span class="toc-text">raw表的使用</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#iptables%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">6.</span> <span class="toc-text">iptables的问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#References"><span class="toc-number">7.</span> <span class="toc-text">References</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        iptables
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">LJC</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2020-06-06T21:09:32.000Z" itemprop="datePublished">2020-06-06</time>
+        
+        (Updated: <time datetime="2021-02-26T08:08:37.677Z" itemprop="dateModified">2021-02-26</time>)
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/linux/" rel="tag">linux</a>, <a class="tag-link-link" href="/tags/networking/" rel="tag">networking</a>, <a class="tag-link-link" href="/tags/tool/" rel="tag">tool</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h3 id="First-sight-of-iptables"><a href="#First-sight-of-iptables" class="headerlink" title="First sight of iptables"></a>First sight of iptables</h3><p>​          内核防火墙模块（或者Netfilter）提供了相关的机制去管理网络防火墙，iptables就是这样一个用户态的工具，提供了一系列的接口，使得用户可以使用内核提供的能力。 </p>
+<p>​    举个例子，使用iptables禁用所有的端口的tcp连接，除了22端口外。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">iptables -t filter -A INPUT -p tcp --dport 22  -j ACCEPT</span><br><span class="line">iptables -t filter -A INPUT -p tcp -j DROP</span><br></pre></td></tr></table></figure>
+
+<p>​    通过以上两条命令，就可以使得除了SSH连接外的，其他所有tcp连接都建立不起来，注意的是，这两条命令的实行顺序不能调转，如果先执行了<strong>iptables -t filter -A INPUT -p tcp -j DROP</strong> 会使得所有的端口，包括SSH的连接都会断掉，你的机器就永远登录不了了。SSH的端口非22的，改成对应的端口即可。</p>
+<p>​    iptables在日常的使用中，很大一部分的功能就是开放服务的端口，除了服务的端口，其他的端口都DROP掉，另外，如果某些端口，比如SSH的22端口，只开放给一部分的机器访问，那么可以添加一条规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -t filter -A INPUT -p tcp --dport 22 -s 10.10.10.10  -j ACCEPT</span><br></pre></td></tr></table></figure>
+
+<p>​    -s 指定了请求的源地址，一定要是10.10.10.10的机器才能访问22端口，其他端口不匹配这条规则。通过这样，我们可以实现一个白名单的功能，使得一部分的机器可以访问受限制的端口。至于对外提供服务的端口，设置成全开放即可。-s的地址格式可以是CIDR的格式，因此可以表达一批的IP地址。</p>
+<p>​    为什么需要配置防火墙，限制端口被访问呢？因为<strong>最小权限原则</strong>。</p>
+<blockquote>
+<p>在计算机科学领域中，最小权限原则是要求计算环境中的特定抽象层的每个模块如进程、用户或者计算机程序只能访问当下所必需的信息或者资源。 赋予每一个合法动作最小的权限，就是为了保护数据以及功能避免受到错误或者恶意行为的破坏。</p>
+</blockquote>
+<p>​    暴露更多的接口可以对外访问，意味着有更大的机会受到恶意的工具。还有也是防止系统管理员，在服务器上误操作启动了一个服务，而这个服务并不是对外开放的，这样，如果没有限制端口的开放，这个服务就暴露出去了。</p>
+<p>​    另外，还有一条比较特殊的规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -t filter -I INPUT  -m state --state ESTABLISHED,RELATED -j ACCEPT</span><br></pre></td></tr></table></figure>
+
+<p>​    这条规则指定了两个状态，ESTABLISHED和RELATED，其中ESTABLISHED状态指定的是，如果是由服务器（本机器）本身发起的连接，那么对端其他端口发过来的请求就可以接受，因为是ESTABLISHED的状态。另外RELATED的状态指的是，在一个已经正常建立连接基础上新建的连接，也是开放对应的端口。下面详细解释一下这两种状态：</p>
+<pre><code> 1. ESTABLISHED： 简单粗暴一点的解释是，如果是由服务器本身发起的连接，后面对端发过来的Packet都会认为是ESTABLISHED状态。对于应用层来说，就是服务器发起的连接，能够正常使用，INPUT链不需要再额外的设置。服务器发起请求的时候，在OUTPUT链出去的时候，会记录这个流的转态为NEW，那么对端返回数据包的时候能，发现状态之前是NEW，那么收到对端的时候后，认为这个流的状态就是ESATBLISHED的了。
+ 2. RELATED： 具体实现的细节我并没有深究。FTP的场景就是这样，一个数据通道一个控制通道。FTP首先建立的是控制通道的连接，那么在传输文件的时候，会建立一条数据通道的连接。那么这条数据通道的连接就会被标记为RELATED。
+</code></pre>
+<h3 id="iptables的三表五链"><a href="#iptables的三表五链" class="headerlink" title="iptables的三表五链"></a>iptables的三表五链</h3><h4 id="netfilter提供的hook"><a href="#netfilter提供的hook" class="headerlink" title="netfilter提供的hook"></a>netfilter提供的hook</h4><p>​    iptables其实是利用了内核提供的钩子，iptables通过往这些钩子中注册这些规则进去，来实现对数据流的操作。iptables就是通过检查每个数据包，看这些数据包符合了哪些规则，要是数据包匹配到了规则，就会执行指定的动作，常见的动作就是：DROP和ACCEPT。如果某一条DROP的规则，描述的是443端口的数据都DROP掉，那么443端口的连接就建立不起来。当然，出了DROP和ACCEPT还有其他的动作，后面再详述。</p>
+<p>​    常说iptables有三表五链，其实iptables一共有五个表，常用的是三个，分别为：filter， nat，raw。还有两个表是：mangle 和 security。</p>
+<p>​    在说五链之前，先说一下内核实现iptables功能的机制。内核的Netfilter模块提供了一个框架去跟内核的网络栈交互，一个数据包从网卡进来到网卡出去的整个生命周期。Netfilter提供了五个hook，使得用户层可以实现的数据包的控制。</p>
+<p>五个hook分别是（懒得翻译了=.=）：</p>
+<ul>
+<li><code>NF_IP_PRE_ROUTING</code>: This hook will be triggered by any incoming traffic very soon after entering the network stack. This hook is processed before any routing decisions have been made regarding where to send the packet.</li>
+<li><code>NF_IP_LOCAL_IN</code>: This hook is triggered after an incoming packet has been routed if the packet is destined for the local system.</li>
+<li><code>NF_IP_FORWARD</code>: This hook is triggered after an incoming packet has been routed if the packet is to be forwarded to another host.</li>
+<li><code>NF_IP_LOCAL_OUT</code>: This hook is triggered by any locally created outbound traffic as soon it hits the network stack.</li>
+<li><code>NF_IP_POST_ROUTING</code>: This hook is triggered by any outgoing or forwarded traffic after routing has taken place and just before being put out on the wire.</li>
+</ul>
+<h4 id="五链"><a href="#五链" class="headerlink" title="五链"></a>五链</h4><p>​    五链其实就是对应内核模块netfilter提供的五个hook：</p>
+<ul>
+<li><code>PREROUTING</code>: Triggered by the <code>NF_IP_PRE_ROUTING</code> hook.</li>
+<li><code>INPUT</code>: Triggered by the <code>NF_IP_LOCAL_IN</code> hook.</li>
+<li><code>FORWARD</code>: Triggered by the <code>NF_IP_FORWARD</code> hook.</li>
+<li><code>OUTPUT</code>: Triggered by the <code>NF_IP_LOCAL_OUT</code> hook.</li>
+<li><code>POSTROUTING</code>: Triggered by the <code>NF_IP_POST_ROUTING</code> hook.</li>
+</ul>
+<p>​    iptables最小的管理单元就是一条规则，每个hook上面都可以注册很多的规则。一个数据包，从网卡进入到从网卡出去，在整个的生命周期中，会触发这五个hook（理论上是会触发，除非在前面的hook的某个规则DROP掉或者标记了后面不再做检查）都会被触发。整个数据的生命周期流程如下图：</p>
+<p><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20190609174841.png"></p>
+<p>​                        </p>
+<p>也就是说，PREROUTING上的规则会先于INPUT执行。链的执行顺序是：PREROUTING &gt; INPUT &gt; FORWARD &gt; OUTPUT &gt; POSTROUTING。 那么我们的表有什么用了，既然规则是绑定到hook上去了，那么好像表没有什么用了。其实表在实现上，只是为了方便规则的管理，还有也是将不同的规则分类，方便用户去查看不同的表。不同的表主要的功能是不一样的。比如filter表，主要是为了过滤数据包，禁止不允许的数据进入到内核；nat表就是对数据包的源地址和目的地址进行转换。将不同的业务逻辑，不同的功能的规则，放在不同的表上，方便管理。我认为这是表设计的初衷（最新内核的nftable已经开放了多个自定义的表的功能了，先挖坑，后面再写一遍关于nftable的文章）。</p>
+<p><strong>既然hook有执行顺序，那么表有执行的顺序吗？</strong></p>
+<p>答案是有的，表（表的执行顺序从上到下）和链（链的执行的顺序从左到右）如下图所示，同一张表并且同一条链中的执行顺序，则看规则的排列顺序了：</p>
+<table>
+<thead>
+<tr>
+<th>Tables↓/Chains→</th>
+<th>PREROUTING</th>
+<th>INPUT</th>
+<th>FORWARD</th>
+<th>OUTPUT</th>
+<th>POSTROUTING</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>(routing decision)</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>raw</strong></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+</tr>
+<tr>
+<td>(connection tracking enabled)</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>mangle</strong></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><strong>nat</strong> (DNAT)</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+</tr>
+<tr>
+<td>(routing decision)</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>filter</strong></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>security</strong></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>nat</strong> (SNAT)</td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+</tr>
+</tbody></table>
+<p>从上面的图标可以看出来，不是所有的表都支持五个链（hook)，因此不同的功能是要划分到不同的表中去。</p>
+<h3 id="目标-target"><a href="#目标-target" class="headerlink" title="目标 target"></a>目标 target</h3><p>规则匹配后，会有对应的目标，目标有两大类，一类是动作，另外一类就是用户自定义的链。</p>
+<h4 id="动作"><a href="#动作" class="headerlink" title="动作"></a>动作</h4><p>动作有三种（这里没有列全，只列出了常用的）：</p>
+<ol>
+<li>权限相关：ACCEPT、DROP、DENY、 RETURN</li>
+<li>日志相关：LOG</li>
+<li>地址相关：SNAT、DNAT、MASQUERADE</li>
+</ol>
+<h5 id="第一类动作：ACCEPT、DROP、DENY、-RETURN"><a href="#第一类动作：ACCEPT、DROP、DENY、-RETURN" class="headerlink" title="第一类动作：ACCEPT、DROP、DENY、 RETURN"></a>第一类动作：ACCEPT、DROP、DENY、 RETURN</h5><p>​    表示匹配规则后，这个包要怎么处理。ACCEPT表示，这个包允许进入下一个链的判断；DROP表示直接丢包，不响应客户端；DENY表示，返回拒绝访问给客户端；RETURN在这里有两个语义，如果是在主链（五条链）上表示不再判断这条链剩下的规则，target是什么就取决于这条链的policy。链的policy是一条链默认的target，没有匹配到规则或者被RETURN的话，都是会使用默认的规则policy的;</p>
+<h5 id="第二类动作-LOG"><a href="#第二类动作-LOG" class="headerlink" title="第二类动作: LOG"></a>第二类动作: LOG</h5><p>就是这事一条打印日志的规则，需要注意的是，打印日志的规则是需要放在其他规则的前面，否则可能打印日志的规则还没匹配到就已经被前面的规则匹配了。dmesg 可以查看相关的日志。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -D POSTROUTING -d 127.0.0.1  -p tcp --dport 9000 -j LOG --log-prefix &quot;REALSANT9000:&quot;</span><br></pre></td></tr></table></figure>
+
+<h5 id="第三类动作就是地址的转换：SNAT、DNAT、MASQUERADE"><a href="#第三类动作就是地址的转换：SNAT、DNAT、MASQUERADE" class="headerlink" title="第三类动作就是地址的转换：SNAT、DNAT、MASQUERADE"></a>第三类动作就是地址的转换：SNAT、DNAT、MASQUERADE</h5><p>​    SNAT是对源地址和源端口的转换；DNAT是对目的端口和目的地址转换；MASQUERADE比较特殊，它是对源地址的转换，但是它是使用网卡的地址。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">iptables -t nat  -I PREROUTING -p tcp --dport 7777 -j DNAT --to-destination 8.8.8.8:9000</span><br><span class="line">iptables -t nat -I POSTROUTING -p tcp -d 8.8.8.8 --dport 9000  -j MASQUERADE</span><br></pre></td></tr></table></figure>
+
+<p>​    这个就是DNAT和MASQUERAED匹配使用，就可以将本地7777端口收到的流量转发到8.8.8.8机器上的9000端口，另外流量转发需要打开内核转发的模块：<strong>echo 1 &gt; /proc/sys/net/ipv4/ip_forward</strong></p>
+<h4 id="自定义的链"><a href="#自定义的链" class="headerlink" title="自定义的链"></a>自定义的链</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">iptables -I INPUT  -p tcp --dport 2003  -j DOCKER</span><br><span class="line">iptables -I DOCKER  -p tcp -s 8.8.8.8  -j ACCEPT</span><br></pre></td></tr></table></figure>
+
+<p>这里有个自定义的表作为target，那么一个端口2003的数据包匹配到这条规则的时候，它的action是什么，要由DOCKER表进行判断。DOCKER表中有一条规则，表明8.8.8.8主机访问是被允许的。</p>
+<p>创建一个自定义的链：<strong>iptables -N DOCKER</strong> </p>
+<p>另外一个自定义链中，如果动作是RETURN则表明剩下的规则不匹配了，跟函数的返回是一样的，再交由上一层的链处理，如果上一层的链还有规则，则再计算剩下的规则，看看哪个匹配。</p>
+<h3 id="policy"><a href="#policy" class="headerlink" title="policy"></a>policy</h3><p>一个policy引发的转发问题。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ables -t nat  -I PREROUTING -p tcp --dport 7777 -j DNAT --to-destination 8.8.8.8:9000</span><br><span class="line">iptables -t nat -I POSTROUTING -p tcp -d 8.8.8.8 --dport 9000  -j MASQUERADE</span><br></pre></td></tr></table></figure>
+
+<p>通过上述两条命配置好转发后，发现数据也没转发到8.8.8.8主机的9000端口，仔细检查后发现，FORWARD的链没有配置任何规则，并且policy是DROP。这就是问题所在，在数据进行转发出去的时候，DROP的policy将数据包丢了，导致数据没转出去。</p>
+<p><strong>iptables -t filter -L -nv</strong> 查看FORWARD链的规则：</p>
+<blockquote>
+<p>Chain FORWARD (policy DROP 10 packets, 520 bytes)</p>
+</blockquote>
+<p>表示默认的动作是DROP（后面的是这条链的计数器，10个包，520个字节）</p>
+<p>通过修改policy或者添加一个FORWARD的规则就可以了：<strong>iptables -t filter -P FORWARD ACCEPT</strong></p>
+<h3 id="常用的命令行"><a href="#常用的命令行" class="headerlink" title="常用的命令行"></a>常用的命令行</h3><ul>
+<li>表计数器的清空：iptables -t nat -Z</li>
+<li>查看nat表： iptables -t nat -L -nv</li>
+<li>查看filter表：iptables -t filter -L -nv</li>
+<li>清空nat表的规则：iptables -F nat</li>
+<li>查看filter表的INPUT链：iptables -t filter -L INPUT -nv</li>
+<li>保存当前系统的iptables配置： iptables-save</li>
+<li>应用一份iptables的配置文件: iptables-restore configFileName</li>
+</ul>
+<h4 id="raw表的使用"><a href="#raw表的使用" class="headerlink" title="raw表的使用"></a>raw表的使用</h4><p>​    raw表的规则作为最新匹配的规则，利用raw表，我们可以解决一部分的iptables性能问题。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">iptables -t raw -A PREROUTING -p tcp --dport 80 -j NOTRACK</span><br><span class="line">iptables -A FORWARD -m state --state UNTRACKED -j ACCEPT</span><br></pre></td></tr></table></figure>
+
+<p>比如转发到本地的WEB端口80的流量，标记为NOTRACK。</p>
+<p>raw表中包含PREROUTING链和OUTPUT链，优先级最高，可以对数据包在进入NAT表的PREROUTING链之前对消息进行处理。当用户启用了RAW表，消息在经过RAW表的PREROUTING链处理后，将跳过NAT表和ip_conntrack处理，不再做地址转换和数据包的链接跟踪处理。所以raw表可以用在那些不需要做nat和链接跟踪的情况，提升系统性能。因为启用链接跟踪时，系统会建立一个链接跟踪表，每个消息进来时，都会去查询链接跟踪表，当系统业务量过大时，可能会引发系统CPU消耗过高。</p>
+<h3 id="iptables的问题"><a href="#iptables的问题" class="headerlink" title="iptables的问题"></a>iptables的问题</h3><ol>
+<li><p>iptables每次从新应用restore配置文件，首先是先flush掉所有的表，再配置规则。那么这样就存在一个中间态，这个系统是没有任何保护的。</p>
+</li>
+<li><p>iptables的性能问题，规则数的数量多了之后，就会存在性能问题。</p>
+<p>因为，最新的内核推出了nftable代替iptables，志在解决上述的问题。</p>
+</li>
+</ol>
+<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p><a target="_blank" rel="noopener" href="https://www.digitalocean.com/community/tutorials/a-deep-dive-into-iptables-and-netfilter-architecture">https://www.digitalocean.com/community/tutorials/a-deep-dive-into-iptables-and-netfilter-architecture</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.linuxtopia.org/Linux_Firewall_iptables/c1265.html">https://www.linuxtopia.org/Linux_Firewall_iptables/c1265.html</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.frozentux.net/iptables-tutorial/chunkyhtml/x4193.html">https://www.frozentux.net/iptables-tutorial/chunkyhtml/x4193.html</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/5f38e7253fc8">https://www.jianshu.com/p/5f38e7253fc8</a></p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
+  </div>
+  <br/>
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <span id="busuanzi_container_site_pv">【本站总访问量】<span id="busuanzi_value_site_pv"></span>次</span>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#First-sight-of-iptables"><span class="toc-number">1.</span> <span class="toc-text">First sight of iptables</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#iptables%E7%9A%84%E4%B8%89%E8%A1%A8%E4%BA%94%E9%93%BE"><span class="toc-number">2.</span> <span class="toc-text">iptables的三表五链</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#netfilter%E6%8F%90%E4%BE%9B%E7%9A%84hook"><span class="toc-number">2.1.</span> <span class="toc-text">netfilter提供的hook</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%94%E9%93%BE"><span class="toc-number">2.2.</span> <span class="toc-text">五链</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%9B%AE%E6%A0%87-target"><span class="toc-number">3.</span> <span class="toc-text">目标 target</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8A%A8%E4%BD%9C"><span class="toc-number">3.1.</span> <span class="toc-text">动作</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E7%B1%BB%E5%8A%A8%E4%BD%9C%EF%BC%9AACCEPT%E3%80%81DROP%E3%80%81DENY%E3%80%81-RETURN"><span class="toc-number">3.1.1.</span> <span class="toc-text">第一类动作：ACCEPT、DROP、DENY、 RETURN</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E7%B1%BB%E5%8A%A8%E4%BD%9C-LOG"><span class="toc-number">3.1.2.</span> <span class="toc-text">第二类动作: LOG</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%AC%AC%E4%B8%89%E7%B1%BB%E5%8A%A8%E4%BD%9C%E5%B0%B1%E6%98%AF%E5%9C%B0%E5%9D%80%E7%9A%84%E8%BD%AC%E6%8D%A2%EF%BC%9ASNAT%E3%80%81DNAT%E3%80%81MASQUERADE"><span class="toc-number">3.1.3.</span> <span class="toc-text">第三类动作就是地址的转换：SNAT、DNAT、MASQUERADE</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%9A%84%E9%93%BE"><span class="toc-number">3.2.</span> <span class="toc-text">自定义的链</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#policy"><span class="toc-number">4.</span> <span class="toc-text">policy</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C"><span class="toc-number">5.</span> <span class="toc-text">常用的命令行</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#raw%E8%A1%A8%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="toc-number">5.1.</span> <span class="toc-text">raw表的使用</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#iptables%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">6.</span> <span class="toc-text">iptables的问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#References"><span class="toc-number">7.</span> <span class="toc-text">References</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2020/06/06/iptables/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2020/06/06/iptables/&text=iptables"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2020/06/06/iptables/&title=iptables"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2020/06/06/iptables/&is_video=false&description=iptables"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=iptables&body=Check out this article: https://leejiancai.github.io/2020/06/06/iptables/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2020/06/06/iptables/&title=iptables"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2020/06/06/iptables/&title=iptables"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2020/06/06/iptables/&title=iptables"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2020/06/06/iptables/&title=iptables"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2020/06/06/iptables/&name=iptables&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2020/06/06/iptables/&t=iptables"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2099
+    LJC
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GB2KNQXDVP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GB2KNQXDVP');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'https-leejiancai-github-io';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+
+</body>
+</html>
