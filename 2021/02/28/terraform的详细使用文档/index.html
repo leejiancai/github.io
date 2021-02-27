@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="[toc] terraform的使用 资源相关的概念 provider: 基础设施资源的提供者，比如kong、aws的相关配置。描述的是如何访问该资源。 plugin：插件，每个云服务都可以抽象成一个插件 resource：基础设施提供出来的资源，比如kong提供的资源有service、route、consumer等等 data_source ：data source是获取基础设施的资源相关信息，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="terraform的详细使用文档">
+<meta property="og:url" content="https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/index.html">
+<meta property="og:site_name" content="LJC博客">
+<meta property="og:description" content="[toc] terraform的使用 资源相关的概念 provider: 基础设施资源的提供者，比如kong、aws的相关配置。描述的是如何访问该资源。 plugin：插件，每个云服务都可以抽象成一个插件 resource：基础设施提供出来的资源，比如kong提供的资源有service、route、consumer等等 data_source ：data source是获取基础设施的资源相关信息，">
+<meta property="og:locale">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181030172332-20210228014046819.png">
+<meta property="article:published_time" content="2021-02-28T01:34:35.000Z">
+<meta property="article:modified_time" content="2021-02-27T17:51:24.672Z">
+<meta property="article:author" content="LJC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181030172332-20210228014046819.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>terraform的详细使用文档</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="LJC博客" type="application/atom+xml" />
+    
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" href="/2021/02/26/k8s%E7%9A%84Service%E7%9A%84%E5%BA%95%E5%B1%82%E7%BD%91%E7%BB%9C%E8%BD%AC%E5%8F%91%E6%9C%BA%E5%88%B6/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&text=terraform的详细使用文档"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&title=terraform的详细使用文档"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&is_video=false&description=terraform的详细使用文档"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=terraform的详细使用文档&body=Check out this article: https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&title=terraform的详细使用文档"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&title=terraform的详细使用文档"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&title=terraform的详细使用文档"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&title=terraform的详细使用文档"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&name=terraform的详细使用文档&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&t=terraform的详细使用文档"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#terraform%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="toc-number">1.</span> <span class="toc-text">terraform的使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E8%BE%93%E5%85%A5%E5%92%8C%E8%BE%93%E5%87%BA"><span class="toc-number">2.</span> <span class="toc-text">变量的输入和输出</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E8%BE%93%E5%85%A5"><span class="toc-number">2.1.</span> <span class="toc-text">变量的输入</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E8%BE%93%E5%87%BA"><span class="toc-number">2.2.</span> <span class="toc-text">变量的输出</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#terraform%E7%9A%84%E8%AF%AD%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">terraform的语法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E7%B1%BB%E5%9E%8B"><span class="toc-number">4.</span> <span class="toc-text">变量的类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E4%BC%98%E5%85%88%E7%BA%A7"><span class="toc-number">5.</span> <span class="toc-text">变量的优先级</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E6%8F%92%E5%85%A5-interpolation"><span class="toc-number">6.</span> <span class="toc-text">变量的插入 interpolation</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#local-value%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="toc-number">7.</span> <span class="toc-text">local value的使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#resource-%E7%9A%84%E8%AF%AD%E6%B3%95"><span class="toc-number">8.</span> <span class="toc-text">resource 的语法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#provision%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="toc-number">9.</span> <span class="toc-text">provision的使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#multiple-provider"><span class="toc-number">10.</span> <span class="toc-text">multiple provider</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#resource-%E4%B8%AD%E4%BD%BF%E7%94%A8count%EF%BC%8C%E5%87%8F%E5%B0%91%E7%9B%B8%E5%90%8C%E7%9A%84%E5%8F%82%E6%95%B0%E9%85%8D%E7%BD%AE%E5%A4%9A%E6%AC%A1"><span class="toc-number">11.</span> <span class="toc-text">resource 中使用count，减少相同的参数配置多次</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A8%A1%E6%9D%BF%E6%96%87%E4%BB%B6%E5%92%8Ccount%E7%9A%84%E9%85%8D%E5%90%88%E4%BD%BF%E7%94%A8"><span class="toc-number">12.</span> <span class="toc-text">模板文件和count的配合使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E5%AD%A6%E8%BF%90%E7%AE%97"><span class="toc-number">13.</span> <span class="toc-text">简单的数学运算</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#terraform%E7%9A%84%E5%86%85%E5%BB%BA%E5%87%BD%E6%95%B0%EF%BC%88built-in-functions%EF%BC%89"><span class="toc-number">14.</span> <span class="toc-text">terraform的内建函数（built-in functions）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB%E7%9A%84%E6%9F%A5%E7%9C%8B"><span class="toc-number">15.</span> <span class="toc-text">依赖关系的查看</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        terraform的详细使用文档
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">LJC</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-02-28T01:34:35.000Z" itemprop="datePublished">2021-02-28</time>
+        
+        (Updated: <time datetime="2021-02-27T17:51:24.672Z" itemprop="dateModified">2021-02-27</time>)
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>[toc]</p>
+<h2 id="terraform的使用"><a href="#terraform的使用" class="headerlink" title="terraform的使用"></a>terraform的使用</h2><ul>
+<li>资源相关的概念<ul>
+<li>provider: 基础设施资源的提供者，比如kong、aws的相关配置。描述的是如何访问该资源。</li>
+<li>plugin：插件，每个云服务都可以抽象成一个插件</li>
+<li>resource：基础设施提供出来的资源，比如kong提供的资源有service、route、consumer等等</li>
+<li>data_source ：data source是获取基础设施的资源相关信息，比如aws有哪些机房，机房的id是什么。那么配置文件就可以动态地获取机房的id，不用修改配置文件。</li>
+<li>state：kong的状态信息，描述的是基础设施已存在的资源，terraform根据状态信息对资源的生命周期进行管理。</li>
+<li>backend：存储state文件的存储介质，可以是本地的文件系统，也可以是s3等外置存储。</li>
+<li>module：模块，terraform的资源可以模块化，然后进行导入。</li>
+</ul>
+</li>
+<li>操作相关的概念<ul>
+<li>init ：初始化项目，backend的初始化以及module的导入</li>
+<li>apply: 应用配置文件，相当于将配置文件的描述的资源部署到真实环境</li>
+<li>plan： 查看如果要执行部署（apply），将会产生什么变化，用来查看部署后的变化，但不会真正执行部署</li>
+<li>destroy：删除已经部署的资源。</li>
+<li>import：导入当前已经存在的资源，可以用来state文件丢失或者之前不是使用terraform部署的资源导入，然后terraform就可以对这些资源进行管理。</li>
+</ul>
+</li>
+<li>hello world  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">provider &quot;aws&quot; &#123;</span><br><span class="line">  access_key &#x3D; &quot;ACCESS_KEY_HERE&quot;</span><br><span class="line">  secret_key &#x3D; &quot;SECRET_KEY_HERE&quot;</span><br><span class="line">  region     &#x3D; &quot;us-east-1&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;aws_instance&quot; &quot;example&quot; &#123;</span><br><span class="line">  ami           &#x3D; &quot;ami-2757f631&quot;</span><br><span class="line">  instance_type &#x3D; &quot;t2.micro&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+  示例中，provider的名字叫aws，terraform就会去加载aws这个插件，然后对插件进行初始化，初始化的输入有：access_key、secret_key、和region三个值。初始化完后，就会创建一个资源，这个资源是aws提供的aws_instance，然后输入ami和instance_type这两个值。执行terraform apply完成部署。</li>
+<li>一个demo的部署列子（demo-SDK）<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br></pre></td><td class="code"><pre><span class="line">terraform &#123;</span><br><span class="line">  backend &quot;s3&quot; &#123;</span><br><span class="line">    endpoint &#x3D; &quot;s3.foo.example.com&quot;</span><br><span class="line">    bucket &#x3D; &quot;hdg3-terraform-state-test&quot;</span><br><span class="line">    access_key &#x3D; &quot;************************&quot;</span><br><span class="line">    secret_key &#x3D; &quot;*************************&quot;</span><br><span class="line">    key    &#x3D; &quot;demo-terraform.tfstate&quot;</span><br><span class="line">    region &#x3D; &quot;us-west-1&quot;</span><br><span class="line">    skip_requesting_account_id &#x3D; true</span><br><span class="line">    skip_credentials_validation &#x3D; true</span><br><span class="line">    skip_get_ec2_platforms &#x3D; true</span><br><span class="line">    skip_metadata_api_check &#x3D; true</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">provider &quot;kong&quot; &#123;</span><br><span class="line">    kong_admin_uri  &#x3D; &quot;http:&#x2F;&#x2F;someIP:8001&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_service&quot; &quot;service_foo_external&quot; &#123;</span><br><span class="line">    name        &#x3D; &quot;foo_external&quot;</span><br><span class="line">    protocol    &#x3D; &quot;http&quot;</span><br><span class="line">    host        &#x3D; &quot;5.5.5.5&quot;</span><br><span class="line">    port        &#x3D; 8888</span><br><span class="line">    path        &#x3D; &quot;&#x2F;&quot;</span><br><span class="line">    retries     &#x3D; 5</span><br><span class="line">    connect_timeout &#x3D; 1000</span><br><span class="line">    write_timeout   &#x3D; 2000</span><br><span class="line">    read_timeout    &#x3D; 3000</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_service&quot; &quot;service_foo_internal&quot; &#123;</span><br><span class="line">    name        &#x3D; &quot;foo_internal&quot;</span><br><span class="line">    protocol    &#x3D; &quot;http&quot;</span><br><span class="line">    host        &#x3D; &quot;7.7.7.7&quot;</span><br><span class="line">    port        &#x3D; 8888</span><br><span class="line">    path        &#x3D; &quot;&#x2F;&quot;</span><br><span class="line">    retries     &#x3D; 5</span><br><span class="line">    connect_timeout &#x3D; 1000</span><br><span class="line">    write_timeout   &#x3D; 2000</span><br><span class="line">    read_timeout    &#x3D; 3000</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_service&quot; &quot;service_foo_ext_options&quot; &#123;</span><br><span class="line">    name        &#x3D; &quot;foo_external_options&quot;</span><br><span class="line">    protocol    &#x3D; &quot;http&quot;</span><br><span class="line">    host        &#x3D; &quot;6.6.6.6&quot;</span><br><span class="line">    port        &#x3D; 8888</span><br><span class="line">    path        &#x3D; &quot;&#x2F;&quot;</span><br><span class="line">    retries     &#x3D; 5</span><br><span class="line">    connect_timeout &#x3D; 1000</span><br><span class="line">    write_timeout   &#x3D; 2000</span><br><span class="line">    read_timeout    &#x3D; 3000</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_route&quot; &quot;foo_external_route&quot; &#123;</span><br><span class="line">    protocols   &#x3D; [ &quot;http&quot; ]</span><br><span class="line">    methods     &#x3D; [ &quot;GET&quot;, &quot;POST&quot; , &quot;PUT&quot;, &quot;DELETE&quot;]</span><br><span class="line">    hosts       &#x3D; [ &quot;fooagw.foo.example.com&quot; ]</span><br><span class="line">    paths       &#x3D; [ &quot;&#x2F;foo&#x2F;demo&#x2F;v1&#x2F;api&quot; ]</span><br><span class="line">    strip_path  &#x3D; true</span><br><span class="line">    preserve_host   &#x3D; true</span><br><span class="line">    service_id  &#x3D; &quot;$&#123;kong_service.service_foo_external.id&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_route&quot; &quot;foo_internal_route&quot; &#123;</span><br><span class="line">    protocols   &#x3D; [ &quot;http&quot;]</span><br><span class="line">    methods     &#x3D; [ &quot;GET&quot;, &quot;POST&quot; , &quot;PUT&quot;, &quot;DELETE&quot;]</span><br><span class="line">    hosts       &#x3D; [ &quot;fooagw-in.foo.example.com&quot; ]</span><br><span class="line">    paths       &#x3D; [ &quot;&#x2F;foo&#x2F;demo&#x2F;v1&#x2F;api&quot; ]</span><br><span class="line">    strip_path  &#x3D; true</span><br><span class="line">    preserve_host   &#x3D; true</span><br><span class="line">    service_id  &#x3D; &quot;$&#123;kong_service.service_foo_internal.id&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_route&quot; &quot;foo_external_options_route&quot; &#123;</span><br><span class="line">    protocols   &#x3D; [ &quot;http&quot;]</span><br><span class="line">    methods     &#x3D; [ &quot;OPTIONS&quot;]</span><br><span class="line">    hosts       &#x3D; [ &quot;fooagw.foo.example.com&quot; ]</span><br><span class="line">    paths       &#x3D; [ &quot;&#x2F;foo&#x2F;demo&#x2F;v1&#x2F;api&quot; ]</span><br><span class="line">    strip_path  &#x3D; true</span><br><span class="line">    preserve_host   &#x3D; true</span><br><span class="line">    service_id  &#x3D; &quot;$&#123;kong_service.service_foo_ext_options.id&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">resource &quot;kong_plugin&quot; &quot;hmac_foo_external&quot; &#123;</span><br><span class="line">    name &#x3D; &quot;hmac-auth&quot;</span><br><span class="line"></span><br><span class="line">    service_id  &#x3D; &quot;$&#123;kong_service.service_foo_external.id&#125;&quot;</span><br><span class="line"></span><br><span class="line">    config &#x3D; &#123;</span><br><span class="line">        &quot;clock_skew&quot; &#x3D; 300,</span><br><span class="line">        &quot;algorithms&quot; &#x3D; &quot;hmac-sha256&quot;</span><br><span class="line">        &quot;validate_request_body&quot; &#x3D; &quot;true&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_consumer&quot; &quot;demo&quot; &#123;</span><br><span class="line">    username &#x3D; &quot;demo&quot; </span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_consumer_plugin_config&quot; &quot;demo_hamc_credential&quot; &#123;</span><br><span class="line">    consumer_id &#x3D; &quot;$&#123;kong_consumer.demo.id&#125;&quot;</span><br><span class="line">    plugin_name &#x3D; &quot;hmac-auth&quot;</span><br><span class="line">    config_json &#x3D; &quot;&#123;\&quot;username\&quot;:\&quot;demo-foo\&quot;, \&quot;secret\&quot;: \&quot;demokey\&quot;&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_plugin&quot; &quot;auth_foo_external&quot; &#123;</span><br><span class="line">    name &#x3D; &quot;auth&quot;</span><br><span class="line">    service_id &#x3D; &quot;$&#123;kong_service.service_foo_external.id&#125;&quot;</span><br><span class="line"></span><br><span class="line">    config &#x3D; &#123;</span><br><span class="line">        &quot;token_header&quot; &#x3D; &quot;x-some-token&quot;</span><br><span class="line">        &quot;parse_token&quot; &#x3D; &quot;false&quot;</span><br><span class="line"></span><br><span class="line">        &quot;keys_to_headers&quot; &#x3D; &quot;true&quot;</span><br><span class="line">        &quot;keys_to_headers_dict&quot; &#x3D; &quot;&#123;\&quot;role\&quot; : \&quot;x-role\&quot;&#125;&quot;</span><br><span class="line"></span><br><span class="line">        &quot;ext_service_auth&quot; &#x3D; &quot;true&quot;</span><br><span class="line">        &quot;ext_service_auth_path&quot; &#x3D; &quot;8.8.8.8:8080&#x2F;identify&quot;</span><br><span class="line">        &quot;ext_service_auth_type&quot; &#x3D; &quot;http&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">resource &quot;kong_plugin&quot; &quot;ip-restriction_foo_internal&quot; &#123;</span><br><span class="line">    name &#x3D; &quot;ip-restriction&quot;</span><br><span class="line">    service_id &#x3D; &quot;$&#123;kong_service.service_foo_internal.id&#125;&quot;</span><br><span class="line">    config &#x3D; &#123;</span><br><span class="line">        &quot;whitelist&quot; &#x3D; &quot;10.0.0.1&#x2F;8&quot;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>此配置文件声明，将state保存在S3存储上，s3存储的访问的控制就写在配置文件里。有了这一份文件，我们就可以在任意的控制机上控制kong节点的配置。provider kong里面的url指明的是如何访问到kong节点的admin api入口。后续的是跟ngsocial-SDK业务相关的配置。</p>
+<h2 id="变量的输入和输出"><a href="#变量的输入和输出" class="headerlink" title="变量的输入和输出"></a>变量的输入和输出</h2><p>一些秘钥等敏感信息可以不放在配置文件里面，不用进行版本管理。可以在执行命令的时候输入，或者也可以在一个配置文件里定义，但是这个配置文件不会放在版本管理工具里公开。<br>变量的输出可以用于获取感兴趣的变量，用于用户管理资源。</p>
+<h3 id="变量的输入"><a href="#变量的输入" class="headerlink" title="变量的输入"></a>变量的输入</h3><p>terraform默认会从本地目录的terraform.tfvars读取变量的值，因此我们可以在<strong>terraform.<em>tfvars</em></strong>里面定义好变量的值：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">amis &#x3D; &#123;</span><br><span class="line">    &quot;us-east-1&quot; &#x3D; &quot;ami-2757f631&quot;</span><br><span class="line">    &quot;us-west-2&quot; &#x3D; &quot;ami-def456&quot;</span><br><span class="line">&#125;</span><br><span class="line">access_key &#x3D; &quot;AKIAJPC3************&quot;</span><br><span class="line">secret_key &#x3D; &quot;8ocYIxwBi8wK9azxy8g****************&quot;</span><br></pre></td></tr></table></figure>
+
+
+<p>在.tf文件定义可以是：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">lijiancai@lijiancai:~&#x2F;terra$ cat terraform.tfvars</span><br><span class="line">amis &#x3D; &#123;</span><br><span class="line">  &quot;us-east-1&quot; &#x3D; &quot;ami-2757f631&quot;</span><br><span class="line">  &quot;us-west-2&quot; &#x3D; &quot;ami-def456&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">access_key &#x3D; &quot;AKIAJPC3************&quot;</span><br><span class="line">secret_key &#x3D; &quot;8ocYIxwBi8wK9azxy8g****************&quot;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">lijiancai@lijiancai:~&#x2F;terra$ cat aws_ec2.tf</span><br><span class="line">variable &quot;region&quot; &#123;&#125;</span><br><span class="line">variable &quot;amis&quot; &#123;</span><br><span class="line">  type &#x3D; &quot;map&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">variable &quot;access_key&quot; &#123;&#125;</span><br><span class="line">variable &quot;secret_key&quot; &#123;&#125;</span><br><span class="line"></span><br><span class="line">provider &quot;aws&quot; &#123;</span><br><span class="line">  access_key &#x3D; &quot;$&#123;var.access_key&#125;&quot;</span><br><span class="line">  secret_key &#x3D; &quot;$&#123;var.secret_key&#125;&quot;</span><br><span class="line">  region     &#x3D; &quot;$&#123;var.region&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;aws_instance&quot; &quot;example&quot; &#123;</span><br><span class="line">  ami           &#x3D; &quot;$&#123;lookup(var.amis,var.region)&#125;&quot;</span><br><span class="line">  instance_type &#x3D; &quot;t2.micro&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>注意：在terraform.tfvars里面赋值的变量，必须在.tf文件里面有声明，要使用variable关键字声明</p>
+<p>运行apply的时候传入region的值：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">terraform apply -var region&#x3D;us-east-1</span><br></pre></td></tr></table></figure>
+<h3 id="变量的输出"><a href="#变量的输出" class="headerlink" title="变量的输出"></a>变量的输出</h3><ol>
+<li>定义一个tf文件：output.tf <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">output &quot;ip&quot; &#123;</span><br><span class="line">       value &#x3D; &quot;$&#123;aws_instance.example.public_ip&#125;&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ol>
+<ol start="2">
+<li>应用后的输出：<blockquote>
+<pre><code>lijiancai@lijiancai:~/terra$ terraform apply -var region=us-east-1
+aws_instance.example: Refreshing state... (ID: i-01cb39074dfba6167)
+
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+ip = 54.205.97.129
+</code></pre>
+</blockquote>
+</li>
+</ol>
+<h2 id="terraform的语法"><a href="#terraform的语法" class="headerlink" title="terraform的语法"></a>terraform的语法</h2><p>terraform支持两种声明语法，一种是HCL（HashiCorp Configuration Language），另外是一种是JSON。由于JSON的可读性较差，官方推荐使用HCL。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"># An AMI</span><br><span class="line">variable &quot;ami&quot; &#123;</span><br><span class="line">  description &#x3D; &quot;the AMI to use&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;* A multi</span><br><span class="line">   line comment. *&#x2F;</span><br><span class="line">resource &quot;aws_instance&quot; &quot;web&quot; &#123;</span><br><span class="line">  ami               &#x3D; &quot;$&#123;var.ami&#125;&quot;</span><br><span class="line">  count             &#x3D; 2</span><br><span class="line">  source_dest_check &#x3D; false</span><br><span class="line"></span><br><span class="line">  connection &#123;</span><br><span class="line">    user &#x3D; &quot;root&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>单行备注，以#开头</li>
+<li>多行备注, 用/* */包裹起来</li>
+<li>赋值操作用=，key=value，中间的空格忽略</li>
+<li>字符串用双引号括起来</li>
+<li>变量的插入使用${var.foo}</li>
+<li>多行的字符串插入可以使用here-doc语法</li>
+<li>数字默认是十进制</li>
+<li>布尔类型的值是true和false</li>
+<li>list类型使用[] ,比如 [“GET”, “PUT”]</li>
+<li>map类型使用{}, 比如 { “foo”: “bar”, “bar”: “baz” }</li>
+</ul>
+<h2 id="变量的类型"><a href="#变量的类型" class="headerlink" title="变量的类型"></a>变量的类型</h2><ul>
+<li>字符串string：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">variable &quot;key&quot; &#123;</span><br><span class="line">  type    &#x3D; &quot;string&quot;</span><br><span class="line">  default &#x3D; &quot;value&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">variable &quot;long_key&quot; &#123;</span><br><span class="line">  type &#x3D; &quot;string&quot;</span><br><span class="line">  default &#x3D; &lt;&lt;EOF</span><br><span class="line">This is a long key.</span><br><span class="line">Running over several lines.</span><br><span class="line">EOF</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>字典map：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">variable &quot;images&quot; &#123;</span><br><span class="line">  type    &#x3D; &quot;map&quot;</span><br><span class="line">  default &#x3D; &#123;</span><br><span class="line">    &quot;us-east-1&quot; &#x3D; &quot;image-1234&quot;</span><br><span class="line">    &quot;us-west-2&quot; &#x3D; &quot;image-4567&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>数组list：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">variable &quot;users&quot; &#123;</span><br><span class="line">  type    &#x3D; &quot;list&quot;</span><br><span class="line">  default &#x3D; [&quot;admin&quot;, &quot;ubuntu&quot;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>布尔类型boolean：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">variable &quot;active&quot; &#123;</span><br><span class="line">  default &#x3D; false</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>值可以是true(“true”)和false(“false”)</p>
+<ul>
+<li>数字</li>
+</ul>
+<h2 id="变量的优先级"><a href="#变量的优先级" class="headerlink" title="变量的优先级"></a>变量的优先级</h2><ul>
+<li>默认值：首先，变量可以使用之前需要声明，声明的时候可以赋一个默认的值：比如main.tf中</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">provider &quot;kong&quot; &#123;</span><br><span class="line">    alias &#x3D; &quot;k2&quot;</span><br><span class="line">    kong_admin_uri  &#x3D; &quot;http:&#x2F;&#x2F;127.0.0.1:8001&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">variable &quot;test&quot; &#123;</span><br><span class="line">    default &#x3D; &quot;foo&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">output &quot;test_output&quot; &#123;</span><br><span class="line">    value &#x3D; &quot;$&#123;var.test&#125;&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>test的默认值设为了”foo”,因此执行terrform apply后，输出的test_output是foo</p>
+<ul>
+<li><p>环境变量：可以使用环境变量输入，改变变量的值：执行 <strong>TF_VAR_test=”bar” terraform apply</strong> 输出的test_output是bar。因此环境变量能够改变test的值。环境变量的优先级比默认值高。</p>
+</li>
+<li><p>变量定义（definition）文件：可以在当前的目录下，创建一个terraform.tfvars的文件,内容如下</p>
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">test &#x3D; &quot;ggggg&quot;</span><br></pre></td></tr></table></figure>
+<p>执行 <strong>TF_VAR_test=”bar” terraform apply</strong> 输出的test_output是ggggg。因此变量定义文件的优先级比环境变量高。</p>
+<ul>
+<li>命令行参数–var：存在环境变量和变量定义文件的情况下，执行<strong>TF_VAR_test=”bar” terraform apply –var “test=abcd”</strong>,输出的test_output是abcd</li>
+</ul>
+<h2 id="变量的插入-interpolation"><a href="#变量的插入-interpolation" class="headerlink" title="变量的插入 interpolation"></a>变量的插入 interpolation</h2><ul>
+<li>字符串：${var.foo}</li>
+<li>map： 格式是 var.MAP[“KEY”] 例子${var.amis[“us-east-1”]}</li>
+<li>list：”${var.LIST}”， 整个列表”${var.subnets}”，列表中的某一个： ${var.subnets[idx]}</li>
+<li>其他资源的变量： ${var.subnets[idx]}， ${aws_instance.web.*.id}</li>
+<li>data source中的变量：${aws_instance.web.*.id}， ${data.aws_subnet.example.0.cidr_block}</li>
+<li>模块的输出：语法是 MODULE.NAME.OUTPUT， 例子 ${module.foo.bar} </li>
+<li>Count information， 当前resource的编号${count.index}</li>
+<li>Path information<br>The syntax is path.TYPE. TYPE can be cwd, module, or root. cwd will interpolate the current working directory. module will interpolate the path to the current module. root will interpolate the path of the root module. In general, you probably want the path.module variabl</li>
+</ul>
+<p>特殊用法：”${var.name_prefix != “” ? var.name_prefix : local.default_name_prefix}” 可以使用三目运算符决定变量的值。语法是CONDITION ? TRUEVAL : FALSEVAL，另外CONDITION中还支持的运算符还有：</p>
+<blockquote>
+<pre><code>Equality: == and !=
+Numerical comparison: &gt;, &lt;, &gt;=, &lt;=
+Boolean logic: &amp;&amp;, ||, unary !
+</code></pre>
+</blockquote>
+<h2 id="local-value的使用"><a href="#local-value的使用" class="headerlink" title="local value的使用"></a>local value的使用</h2><p>local value的使用，像是一个函数的功能，可以返回值</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"># Ids for multiple sets of EC2 instances, merged together</span><br><span class="line">locals &#123;</span><br><span class="line">  instance_ids &#x3D; &quot;$&#123;concat(aws_instance.blue.*.id, aws_instance.green.*.id)&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># A computed default name prefix</span><br><span class="line">locals &#123;</span><br><span class="line">  default_name_prefix &#x3D; &quot;$&#123;var.project_name&#125;-web&quot;</span><br><span class="line">  name_prefix         &#x3D; &quot;$&#123;var.name_prefix !&#x3D; &quot;&quot; ? var.name_prefix : local.default_name_prefix&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># Local values can be interpolated elsewhere using the &quot;local.&quot; prefix.</span><br><span class="line">resource &quot;aws_s3_bucket&quot; &quot;files&quot; &#123;</span><br><span class="line">  bucket &#x3D; &quot;$&#123;local.name_prefix&#125;-files&quot;</span><br><span class="line">  # ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述例子中，files这个资源的bucket的值，是根据local.name_prefix返回的</p>
+<h2 id="resource-的语法"><a href="#resource-的语法" class="headerlink" title="resource 的语法"></a>resource 的语法</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">resource TYPE NAME &#123;</span><br><span class="line">    CONFIG ...</span><br><span class="line">    [count &#x3D; COUNT]</span><br><span class="line">    [depends_on &#x3D; [NAME, ...]]</span><br><span class="line">    [provider &#x3D; PROVIDER]</span><br><span class="line"></span><br><span class="line">    [LIFECYCLE]</span><br><span class="line"></span><br><span class="line">    [CONNECTION]</span><br><span class="line">    [PROVISIONER ...]</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>[]方括号部分是可选部分。</p>
+<ul>
+<li><p>provider用于multiprovider的使用。</p>
+</li>
+<li><p>depends_on是用于显式地指定依赖关系。terraform会根据变量的interpolation推导依赖关系，但是有的依赖关系通过配置文件推导不出来的话，需要显式地指定依赖关系。</p>
+</li>
+<li><p>LIFECYCLE</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">lifecycle &#123;</span><br><span class="line">    prevent_destroy &#x3D; &quot;$true&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<ul>
+<li>prevent_destroy: 表示该资源只能创建，而不能销毁</li>
+<li>ignore_changes ：用于忽略外部资源的动态变化，比如，有个资源的值在创建后会动态调整，为了不让kong认为该资源发生了变化，需要忽略</li>
+<li>create_before_destroy：资源的销毁前，需要先创建。比如一个资源的属性修改，需要删除后再创建。</li>
+</ul>
+</li>
+<li><p>PROVISIONER： 用于在本地或远端执行命令或配置</p>
+</li>
+<li><p>CONNECTION：表示某PROVISIONER如何访问到本地或远端</p>
+</li>
+<li><p>一个特殊的resource：null_resource</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">resource &quot;aws_instance&quot; &quot;cluster&quot; &#123;</span><br><span class="line">  count &#x3D; 3</span><br><span class="line"></span><br><span class="line">  # ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;null_resource&quot; &quot;cluster&quot; &#123;</span><br><span class="line">  # Changes to any instance of the cluster requires re-provisioning</span><br><span class="line">  triggers &#123;</span><br><span class="line">    cluster_instance_ids &#x3D; &quot;$&#123;join(&quot;,&quot;, aws_instance.cluster.*.id)&#125;&quot;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  # Bootstrap script can run on any instance of the cluster</span><br><span class="line">  # So we just choose the first in this case</span><br><span class="line">  connection &#123;</span><br><span class="line">    host &#x3D; &quot;$&#123;element(aws_instance.cluster.*.public_ip, 0)&#125;&quot;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  provisioner &quot;remote-exec&quot; &#123;</span><br><span class="line">    # Bootstrap script called with private_ip of each node in the clutser</span><br><span class="line">    inline &#x3D; [</span><br><span class="line">      &quot;bootstrap-cluster.sh $&#123;join(&quot; &quot;, aws_instance.cluster.*.private_ip)&#125;&quot;,</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>这个null_resource 不会创建任何的资源，但是有resource的所有语法支持。可以更细粒度的控制provisioner的执行，或者一些依赖的控制。</p>
+<h2 id="provision的使用"><a href="#provision的使用" class="headerlink" title="provision的使用"></a>provision的使用</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">provider &quot;kong&quot; &#123;</span><br><span class="line">    alias &#x3D; &quot;k2&quot;</span><br><span class="line">    kong_admin_uri  &#x3D; &quot;http:&#x2F;&#x2F;127.0.0.1:8001&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">resource &quot;kong_consumer&quot; &quot;test111&quot; &#123;</span><br><span class="line">    provider &#x3D; &quot;kong.k2&quot;</span><br><span class="line">    username&#x3D;&quot;test111&quot;</span><br><span class="line"></span><br><span class="line">    provisioner &quot;local-exec&quot; &#123;</span><br><span class="line">        command &#x3D; &quot;echo $&#123;self.username&#125; &gt; file.txt&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一个资源kong_consumer的名字是test111，在创建资源后会执行provision:local-exec提供的的命令。默认provision是在resource创建（update是包括的，仅仅是creation的时候）的时候执行，不过也可以指定阶段。</p>
+</li>
+<li><p>执行阶段:包括creation和destroy。默认是creation。但是使用when关键字就可以指定执行阶段了</p>
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">resource &quot;aws_instance&quot; &quot;web&quot; &#123;</span><br><span class="line">  # ...</span><br><span class="line"></span><br><span class="line">  provisioner &quot;local-exec&quot; &#123;</span><br><span class="line">    command &#x3D; &quot;echo first&quot;</span><br><span class="line">    when &#x3D; &quot;destroy&quot;</span><br><span class="line">  &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>multiple provisioner：按照配置文件中定义的顺序执行</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">resource &quot;aws_instance&quot; &quot;web&quot; &#123;</span><br><span class="line">  # ...</span><br><span class="line"></span><br><span class="line">  provisioner &quot;local-exec&quot; &#123;</span><br><span class="line">    command &#x3D; &quot;echo first&quot;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  provisioner &quot;local-exec&quot; &#123;</span><br><span class="line">    command &#x3D; &quot;echo second&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>on_failure: 执行provisioner执行命令失败的行为，默认是失败终止执行（fail）。可以选择continue</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">resource &quot;aws_instance&quot; &quot;web&quot; &#123;</span><br><span class="line">  # ...</span><br><span class="line"></span><br><span class="line">  provisioner &quot;local-exec&quot; &#123;</span><br><span class="line">    command    &#x3D; &quot;echo $&#123;self.private_ip&#125; &gt; file.txt&quot;</span><br><span class="line">    on_failure &#x3D; &quot;continue&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>connection： 使用本地执行的时候不需要connection，但是在远端执行命令的时候就需要了。</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">provisioner &quot;file&quot; &#123;</span><br><span class="line">  source      &#x3D; &quot;conf&#x2F;myapp.conf&quot;</span><br><span class="line">  destination &#x3D; &quot;&#x2F;etc&#x2F;myapp.conf&quot;</span><br><span class="line"></span><br><span class="line">  connection &#123;</span><br><span class="line">    type     &#x3D; &quot;ssh&quot;</span><br><span class="line">    user     &#x3D; &quot;root&quot;</span><br><span class="line">    password &#x3D; &quot;$&#123;var.root_password&#125;&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>provisioner file有一个connection，拷贝愿意远端文件到本地<br>connection描述的是如何连接到远端机器，已经相关的credentials。<br>目前terraform提供放任provisioner有：</p>
+<blockquote>
+<pre><code>local-exec 本地执行命令
+file 文件的拷贝
+chef： 配置管理
+habitat：
+remote-exec(支持connection)：远程执行
+salt-masterless
+</code></pre>
+<p>详见：<a target="_blank" rel="noopener" href="https://www.terraform.io/docs/provisioners/index.html">https://www.terraform.io/docs/provisioners/index.html</a></p>
+</blockquote>
+<h2 id="multiple-provider"><a href="#multiple-provider" class="headerlink" title="multiple provider"></a>multiple provider</h2><p>可以用于一个配置文件里面有多个provider</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">provider &quot;kong&quot; &#123;</span><br><span class="line">    alias &#x3D; &quot;k2&quot;</span><br><span class="line">    kong_admin_uri  &#x3D; &quot;http:&#x2F;&#x2F;127.0.0.1:8001&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">provider &quot;kong&quot; &#123;</span><br><span class="line">    alias &#x3D; &quot;k1&quot;</span><br><span class="line">    kong_admin_uri  &#x3D; &quot;http:&#x2F;&#x2F;127.0.0.1:8001&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">variable &quot;names&quot;  &#123;</span><br><span class="line">    default &#x3D; &#123;</span><br><span class="line">        &quot;0&quot; &#x3D; &quot;lee&quot;</span><br><span class="line">        &quot;1&quot; &#x3D; &quot;jiancai&quot;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_consumer&quot; &quot;ngsocial&quot; &#123;</span><br><span class="line">    provider &#x3D; &quot;kong.k1&quot;</span><br><span class="line">    count &#x3D; 2</span><br><span class="line">    username &#x3D; &quot;$&#123;lookup(var.names, count.index)&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_consumer&quot; &quot;test&quot; &#123;</span><br><span class="line">    provider &#x3D; &quot;kong.k2&quot;</span><br><span class="line">    username &#x3D; &quot;testing&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="resource-中使用count，减少相同的参数配置多次"><a href="#resource-中使用count，减少相同的参数配置多次" class="headerlink" title="resource 中使用count，减少相同的参数配置多次"></a>resource 中使用count，减少相同的参数配置多次</h2><p>count描述的是该resource会创建多少个，每个resource都有一个特殊变量（count.index），得知是哪一个resource</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">provider &quot;kong&quot; &#123;</span><br><span class="line">    kong_admin_uri  &#x3D; &quot;http:&#x2F;&#x2F;127.0.0.1:8001&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">variable &quot;names&quot;  &#123;</span><br><span class="line">    default &#x3D; &#123;</span><br><span class="line">        &quot;0&quot; &#x3D; &quot;lee&quot;</span><br><span class="line">        &quot;1&quot; &#x3D; &quot;jiancai&quot;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;kong_consumer&quot; &quot;ngsocial&quot; &#123;</span><br><span class="line">    count &#x3D; 2</span><br><span class="line">    username &#x3D; &quot;$&#123;lookup(var.names, count.index)&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">output &quot;name_1&quot; &#123;</span><br><span class="line">  value &#x3D; &quot;$&#123;kong_consumer.ngsocial.*.username[1]&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line">output &quot;name_2&quot; &#123;</span><br><span class="line">  value &#x3D; &quot;$&#123;kong_consumer.ngsocial.*.username[0]&#125;&quot;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line">output &quot;name_all&quot; &#123;</span><br><span class="line">  value &#x3D; &quot;$&#123;kong_consumer.ngsocial.*.username&#125;&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>获取某个resource的变量，如上述output的例子，[]要放在最后面。需要索引的位置加上一个*<br>输出是：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Outputs:</span><br><span class="line"></span><br><span class="line">name_1 &#x3D; jiancai</span><br><span class="line">name_2 &#x3D; lee</span><br><span class="line">name_all &#x3D; [</span><br><span class="line">    lee,</span><br><span class="line">    jiancai</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>执行terraform show显示的是，每个resource都会加入一个编号，以此来区分</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">root@buzz-unknown142181:&#x2F;home&#x2F;lijiancai&#x2F;gatewayconf&#x2F;test# terraform show</span><br><span class="line">kong_consumer.ngsocial.0:</span><br><span class="line">  id &#x3D; 879f0000-844f-4890-adb7-21b6eace094e</span><br><span class="line">  custom_id &#x3D;</span><br><span class="line">  username &#x3D; lee</span><br><span class="line">kong_consumer.ngsocial.1:</span><br><span class="line">  id &#x3D; b5370300-1ec8-40c7-9300-dc6ea0e11268</span><br><span class="line">  custom_id &#x3D;</span><br><span class="line">  username &#x3D; jiancai</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Outputs:</span><br><span class="line"></span><br><span class="line">name_1 &#x3D; jiancai</span><br><span class="line">name_2 &#x3D; lee</span><br><span class="line">name_all &#x3D; [</span><br><span class="line">    lee,</span><br><span class="line">    jiancai</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<h2 id="模板文件和count的配合使用"><a href="#模板文件和count的配合使用" class="headerlink" title="模板文件和count的配合使用"></a>模板文件和count的配合使用</h2><p>首先，先讲一个模板文件的使用，一个模板可以渲染出一个变量</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">data &quot;template_file&quot; &quot;example&quot; &#123;</span><br><span class="line">  template &#x3D; &quot;$$&#123;hello&#125; $$&#123;world&#125;!&quot;</span><br><span class="line">  vars &#123;</span><br><span class="line">    hello &#x3D; &quot;goodnight&quot;</span><br><span class="line">    world &#x3D; &quot;moon&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">output &quot;rendered&quot; &#123;</span><br><span class="line">  value &#x3D; &quot;$&#123;data.template_file.example.rendered&#125;&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中，渲染出来的值，同伙一个readered的值来获取。</p>
+<p><strong>模板结合count后，可以实现配置文件的模板化。</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">variable &quot;count&quot; &#123;</span><br><span class="line">  default &#x3D; 2</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">variable &quot;hostnames&quot; &#123;</span><br><span class="line">  default &#x3D; &#123;</span><br><span class="line">    &quot;0&quot; &#x3D; &quot;example1.org&quot;</span><br><span class="line">    &quot;1&quot; &#x3D; &quot;example2.net&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">data &quot;template_file&quot; &quot;web_init&quot; &#123;</span><br><span class="line">  # Render the template once for each instance</span><br><span class="line">  count    &#x3D; &quot;$&#123;length(var.hostnames)&#125;&quot;</span><br><span class="line">  template &#x3D; &quot;$&#123;file(&quot;templates&#x2F;web_init.tpl&quot;)&#125;&quot;</span><br><span class="line">  vars &#123;</span><br><span class="line">    # count.index tells us the index of the instance we are rendering</span><br><span class="line">    hostname &#x3D; &quot;$&#123;var.hostnames[count.index]&#125;&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;aws_instance&quot; &quot;web&quot; &#123;</span><br><span class="line">  # Create one instance for each hostname</span><br><span class="line">  count     &#x3D; &quot;$&#123;length(var.hostnames)&#125;&quot;</span><br><span class="line"></span><br><span class="line">  # Pass each instance its corresponding template_file</span><br><span class="line">  user_data &#x3D; &quot;$&#123;data.template_file.web_init.*.rendered[count.index]&#125;&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述例子中，根据不同的hostname，创建出来的aws_instance的user_data都不一样，而且是根据hostname来渲染的。</p>
+<h2 id="简单的数学运算"><a href="#简单的数学运算" class="headerlink" title="简单的数学运算"></a>简单的数学运算</h2><p>加法例子，其中count.index + 1使用了加法，另外format是terraform的内建函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">variable &quot;count&quot; &#123;</span><br><span class="line">  default &#x3D; 2</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">resource &quot;aws_instance&quot; &quot;web&quot; &#123;</span><br><span class="line">  # ...</span><br><span class="line"></span><br><span class="line">  count &#x3D; &quot;$&#123;var.count&#125;&quot;</span><br><span class="line"></span><br><span class="line">  # Tag the instance with a counter starting at 1, ie. web-001</span><br><span class="line">  tags &#123;</span><br><span class="line">    Name &#x3D; &quot;$&#123;format(&quot;web-%03d&quot;, count.index + 1)&#125;&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>支持的运算符：</p>
+<pre><code>- 浮点数：加(+)减(-)乘(*)除(/)
+
+- 整数：加(+)减(-)乘(*)除(/)和取余（%）
+</code></pre>
+<h2 id="terraform的内建函数（built-in-functions）"><a href="#terraform的内建函数（built-in-functions）" class="headerlink" title="terraform的内建函数（built-in functions）"></a>terraform的内建函数（built-in functions）</h2><ul>
+<li>abs(float)  一个浮点数（整数）的绝对值</li>
+<li>basename(path) 返回路径的basename</li>
+<li>base64decode(string) 字符串使用base64转换后的还原</li>
+<li>base64encode(string)  字符串使用base64转换</li>
+<li>index(list, elem) 返回列表中元素的索引</li>
+<li>join(delim, list) 返回一个由列表被插入分隔符后的字符串</li>
+<li>lookup(map, key, [default]) 查找map中一个key的值</li>
+<li>md5(string) 计算md5</li>
+<li>timestamp()  返回当前的UTC时间</li>
+<li>merge(map1,map2) 合并两个map</li>
+<li>format(format, args, …) 字符串的格式化</li>
+<li>还有其他的内建函数，可参考<br><a target="_blank" rel="noopener" href="https://www.terraform.io/docs/configuration/interpolation.html#built-in-functions">https://www.terraform.io/docs/configuration/interpolation.html#built-in-functions</a></li>
+</ul>
+<h2 id="依赖关系的查看"><a href="#依赖关系的查看" class="headerlink" title="依赖关系的查看"></a>依赖关系的查看</h2><ul>
+<li>terraform graph |dot -Tsvg &gt; graph.svg 会生成一个svg文件，可在本地查看。</li>
+<li>dot的工具：apt-get install  GraphViz<br><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181030172332-20210228014046819.png" alt="请在这里输入图片描述"></li>
+</ul>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
+  </div>
+  <br/>
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <span id="busuanzi_container_site_pv">【本站总访问量】<span id="busuanzi_value_site_pv"></span>次</span>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#terraform%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="toc-number">1.</span> <span class="toc-text">terraform的使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E8%BE%93%E5%85%A5%E5%92%8C%E8%BE%93%E5%87%BA"><span class="toc-number">2.</span> <span class="toc-text">变量的输入和输出</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E8%BE%93%E5%85%A5"><span class="toc-number">2.1.</span> <span class="toc-text">变量的输入</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E8%BE%93%E5%87%BA"><span class="toc-number">2.2.</span> <span class="toc-text">变量的输出</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#terraform%E7%9A%84%E8%AF%AD%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">terraform的语法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E7%B1%BB%E5%9E%8B"><span class="toc-number">4.</span> <span class="toc-text">变量的类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E4%BC%98%E5%85%88%E7%BA%A7"><span class="toc-number">5.</span> <span class="toc-text">变量的优先级</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E7%9A%84%E6%8F%92%E5%85%A5-interpolation"><span class="toc-number">6.</span> <span class="toc-text">变量的插入 interpolation</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#local-value%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="toc-number">7.</span> <span class="toc-text">local value的使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#resource-%E7%9A%84%E8%AF%AD%E6%B3%95"><span class="toc-number">8.</span> <span class="toc-text">resource 的语法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#provision%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="toc-number">9.</span> <span class="toc-text">provision的使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#multiple-provider"><span class="toc-number">10.</span> <span class="toc-text">multiple provider</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#resource-%E4%B8%AD%E4%BD%BF%E7%94%A8count%EF%BC%8C%E5%87%8F%E5%B0%91%E7%9B%B8%E5%90%8C%E7%9A%84%E5%8F%82%E6%95%B0%E9%85%8D%E7%BD%AE%E5%A4%9A%E6%AC%A1"><span class="toc-number">11.</span> <span class="toc-text">resource 中使用count，减少相同的参数配置多次</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A8%A1%E6%9D%BF%E6%96%87%E4%BB%B6%E5%92%8Ccount%E7%9A%84%E9%85%8D%E5%90%88%E4%BD%BF%E7%94%A8"><span class="toc-number">12.</span> <span class="toc-text">模板文件和count的配合使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E5%AD%A6%E8%BF%90%E7%AE%97"><span class="toc-number">13.</span> <span class="toc-text">简单的数学运算</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#terraform%E7%9A%84%E5%86%85%E5%BB%BA%E5%87%BD%E6%95%B0%EF%BC%88built-in-functions%EF%BC%89"><span class="toc-number">14.</span> <span class="toc-text">terraform的内建函数（built-in functions）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB%E7%9A%84%E6%9F%A5%E7%9C%8B"><span class="toc-number">15.</span> <span class="toc-text">依赖关系的查看</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&text=terraform的详细使用文档"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&title=terraform的详细使用文档"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&is_video=false&description=terraform的详细使用文档"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=terraform的详细使用文档&body=Check out this article: https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&title=terraform的详细使用文档"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&title=terraform的详细使用文档"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&title=terraform的详细使用文档"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&title=terraform的详细使用文档"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&name=terraform的详细使用文档&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/&t=terraform的详细使用文档"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2099
+    LJC
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GB2KNQXDVP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GB2KNQXDVP');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'https-leejiancai-github-io';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+
+</body>
+</html>
