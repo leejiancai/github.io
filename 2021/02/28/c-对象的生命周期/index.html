@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="[toc] 关于函数声明返回值类型和函数返回对象类型的函数返回声明的对象的类型有：  值 左值引用 右值引用  函数实际返回对象的类型：  lvalue （左值） prvalue （纯右值） xvalue （将亡值）  所谓的声明类型和实际返回类型的例子如下： 1234A&amp; func_lref_lvalue() &amp;#123;    A a&amp;#123;&amp;#125;;    return a;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="c++对象的生命周期">
+<meta property="og:url" content="https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/index.html">
+<meta property="og:site_name" content="LJC博客">
+<meta property="og:description" content="[toc] 关于函数声明返回值类型和函数返回对象类型的函数返回声明的对象的类型有：  值 左值引用 右值引用  函数实际返回对象的类型：  lvalue （左值） prvalue （纯右值） xvalue （将亡值）  所谓的声明类型和实际返回类型的例子如下： 1234A&amp; func_lref_lvalue() &amp;#123;    A a&amp;#123;&amp;#125;;    return a;">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-02-28T22:44:33.000Z">
+<meta property="article:modified_time" content="2021-03-01T13:27:06.317Z">
+<meta property="article:author" content="LJC">
+<meta property="article:tag" content="C++">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>c++对象的生命周期</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="LJC博客" type="application/atom+xml" />
+    
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2021/02/28/terraform%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&text=c++对象的生命周期"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&title=c++对象的生命周期"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&is_video=false&description=c++对象的生命周期"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=c++对象的生命周期&body=Check out this article: https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&title=c++对象的生命周期"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&title=c++对象的生命周期"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&title=c++对象的生命周期"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&title=c++对象的生命周期"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&name=c++对象的生命周期&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&t=c++对象的生命周期"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B3%E4%BA%8E%E5%87%BD%E6%95%B0%E5%A3%B0%E6%98%8E%E8%BF%94%E5%9B%9E%E5%80%BC%E7%B1%BB%E5%9E%8B%E5%92%8C%E5%87%BD%E6%95%B0%E8%BF%94%E5%9B%9E%E5%AF%B9%E8%B1%A1%E7%B1%BB%E5%9E%8B%E7%9A%84"><span class="toc-number">1.</span> <span class="toc-text">关于函数声明返回值类型和函数返回对象类型的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B3%E4%BA%8E%E5%AF%B9%E8%B1%A1%E5%91%A8%E6%9C%9F%E7%9A%84%E5%BB%B6%E9%95%BF"><span class="toc-number">2.</span> <span class="toc-text">关于对象周期的延长</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%8D%E8%AE%A8%E8%AE%BA%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E5%BB%B6%E9%95%BF"><span class="toc-number">3.</span> <span class="toc-text">再讨论对象生命周期延长</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E5%99%A8%E4%BC%9A%E5%B0%9D%E8%AF%95%E4%BD%BF%E7%94%A8%E7%A7%BB%E5%8A%A8%E6%9E%84%E9%80%A0%EF%BC%8C%E8%80%8C%E4%B8%8D%E6%98%AF%E6%8B%B7%E8%B4%9D%E6%9E%84%E9%80%A0"><span class="toc-number">4.</span> <span class="toc-text">编译器会尝试使用移动构造，而不是拷贝构造</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#std-move-%E5%A5%BD%E5%BF%83%E5%B9%B2%E5%9D%8F%E4%BA%8B%E2%80%94%E2%80%94%E7%A6%81%E6%AD%A2%E4%BA%86NRVO"><span class="toc-number">5.</span> <span class="toc-text">std::move 好心干坏事——禁止了NRVO</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        c++对象的生命周期
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">LJC</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-02-28T22:44:33.000Z" itemprop="datePublished">2021-02-28</time>
+        
+        (Updated: <time datetime="2021-03-01T13:27:06.317Z" itemprop="dateModified">2021-03-01</time>)
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/C/" rel="tag">C++</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>[toc]</p>
+<h2 id="关于函数声明返回值类型和函数返回对象类型的"><a href="#关于函数声明返回值类型和函数返回对象类型的" class="headerlink" title="关于函数声明返回值类型和函数返回对象类型的"></a>关于函数声明返回值类型和函数返回对象类型的</h2><p>函数返回声明的对象的类型有：</p>
+<ul>
+<li>值</li>
+<li>左值引用</li>
+<li>右值引用</li>
+</ul>
+<p>函数实际返回对象的类型：</p>
+<ul>
+<li>lvalue （左值）</li>
+<li>prvalue （纯右值）</li>
+<li>xvalue （将亡值）</li>
+</ul>
+<p>所谓的声明类型和实际返回类型的例子如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">A&amp; <span class="title">func_lref_lvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在上述的例子中，声明的对象的类型是:<strong>左值引用</strong>；实际返回的类型是：<strong>lvalue</strong></p>
+<p>根据声明的类型和实际返回类型，组合后的结果为：</p>
+<table>
+<thead>
+<tr>
+<th>声明/实际</th>
+<th>lvalue</th>
+<th>prvalue</th>
+<th>xvalue</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>值</td>
+<td>通过编译</td>
+<td>通过编译</td>
+<td>通过编译</td>
+</tr>
+<tr>
+<td>左值引用</td>
+<td>通过编译</td>
+<td>不通过编译</td>
+<td>不通过编译</td>
+</tr>
+<tr>
+<td>右值引用</td>
+<td>不通过编译</td>
+<td>通过编译</td>
+<td>通过编译</td>
+</tr>
+</tbody></table>
+<p>根据组合的结果得出如下结论：</p>
+<ul>
+<li>左值引用只能被左值绑定。lvalue就是左值。</li>
+<li>右值引用只能被右值绑定。prvalue和xvalue都是属于右值。</li>
+</ul>
+<p>测试的代码如下：</p>
+<div class='spoiler collapsed'>
+    <div class='spoiler-title'>
+        Code
+    </div>
+    <div class='spoiler-content'>
+        <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">A <span class="title">func_value_lvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">A&amp; <span class="title">func_lref_lvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 这个函数是编译不了的</span></span><br><span class="line"><span class="comment">A&amp;&amp; func_rref_lvaue() &#123;</span></span><br><span class="line"><span class="comment">    A a&#123;&#125;;</span></span><br><span class="line"><span class="comment">    return a;</span></span><br><span class="line"><span class="comment">&#125;*/</span></span><br><span class="line"></span><br><span class="line"><span class="function">A <span class="title">func_value_prvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> A();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 这个函数编译不了</span></span><br><span class="line"><span class="comment">/*A&amp; func_lref_prvalue() &#123;</span></span><br><span class="line"><span class="comment">    return A();</span></span><br><span class="line"><span class="comment">&#125;*/</span></span><br><span class="line"></span><br><span class="line"><span class="function">A&amp;&amp; <span class="title">func_rref_prvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> A();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">A <span class="title">func_value_xvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">std</span>::move(a);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 这个函数编译不了</span></span><br><span class="line"><span class="comment">/*A&amp; func_lref_xvalue() &#123;</span></span><br><span class="line"><span class="comment">    A a&#123;&#125;;</span></span><br><span class="line"><span class="comment">    return std::move(a);</span></span><br><span class="line"><span class="comment">&#125;*/</span></span><br><span class="line"></span><br><span class="line"><span class="function">A&amp;&amp; <span class="title">func_rref_xvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">std</span>::move(a);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    </div>
+</div>
+
+<h2 id="关于对象周期的延长"><a href="#关于对象周期的延长" class="headerlink" title="关于对象周期的延长"></a>关于对象周期的延长</h2><p>所谓的对象生命周期延长，一般是在函数调用者和被调用者的关系中，讨论被调用者内部返回的对象的生命周期。</p>
+<p> 比如, 下面的例子中func_value_lvalue被调用后，对象a就会被销毁。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">A <span class="title">func_value_lvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func_value_lvalue();</span><br></pre></td></tr></table></figure>
+
+<p>但是另外一个例子，返回的返回值绑定到一个变量后，生命周期就会被延长了。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">A <span class="title">func_value_lvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">A tmp = func_value_lvalue();</span><br></pre></td></tr></table></figure>
+
+<p>根据上一节所提及的，函数声明类型和实际返回类型的讨论中，有如下六种函数可以声明（定义）</p>
+<ul>
+<li>声明为值类型，实际为lvalue</li>
+<li>声明为值类型，实际为prvalue</li>
+<li>声明为值类型，实际为xvalue</li>
+<li>声明为左值引用，实际为lvalue</li>
+<li>声明为右值引用，实际为prvalue</li>
+<li>声明为右值引用，实际为xvalue</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>函数定义/调用绑定</th>
+<th>值</th>
+<th>左值引用</th>
+<th>右值引用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>声明为值类型，实际为lvalue</td>
+<td>延长</td>
+<td>延长</td>
+<td>延长</td>
+</tr>
+<tr>
+<td>声明为值类型，实际为prvalue</td>
+<td>延长</td>
+<td>编译不通过</td>
+<td>延长</td>
+</tr>
+<tr>
+<td>声明为值类型，实际为xvalue</td>
+<td>move</td>
+<td>编译不通过</td>
+<td>move</td>
+</tr>
+<tr>
+<td>声明为左值引用，实际为lvalue</td>
+<td>无延长</td>
+<td>无延长</td>
+<td>编译不通过</td>
+</tr>
+<tr>
+<td>声明为右值引用，实际为prvalue</td>
+<td>无延长</td>
+<td>编译不通过</td>
+<td>无延长</td>
+</tr>
+<tr>
+<td>声明为右值引用，实际为xvalue</td>
+<td>无延长</td>
+<td>编译不通过</td>
+<td>无延长</td>
+</tr>
+</tbody></table>
+<p>组合值的解析：</p>
+<ul>
+<li>延长：被调用函数内栈生成的对象，在函数调用结束后声明周期得到了延长，调用者可以拿到栈上的对象。后面对象的生命周期由调用者维护。</li>
+<li>move：虽然被调用者栈上的对象在函数调用后销毁了，但是在销毁前通过移动构造函数，可以把对象引用的资源所有权移交给调用者，达到资源也可以给调用者的目的。</li>
+<li>编译不通过：这种组合是不通过编译的，比如函数声明返回值为左值引用，就不能被绑定到一个右值引用的变量上。</li>
+<li>无延长：被调用函数内栈生成的对象，在函数调用结束后就被释放了，调用者拿到的是一个无效的对象，有可能导致段错误（或拿到已释放的资源）等不可定义为错误。</li>
+</ul>
+<p>根据上述组合的结果得出如下结论：</p>
+<ul>
+<li>如果函数声明为引用类型，无论是左值引用还是右值引用，对象的声明周期都要被调用者维护的。</li>
+<li>函数声明为值类型，能够通过编译的，栈上分配的资源都可以有效的传递给调用者，无论是通过延长生命周期还是move语言实现资源的移转的。</li>
+</ul>
+<p>测试的代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span>&#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> x;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    A() &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Constructor A() &quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ~A() &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Destructor ~A() &quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    A(<span class="keyword">const</span> A&amp; other): x&#123;other.x&#125; &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Copy constructor A(const A&amp; other)&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    A&amp; <span class="keyword">operator</span> = (<span class="keyword">const</span> A&amp; other) &#123;</span><br><span class="line">        x = other.x;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Copy assignment operator =(const A&amp; other)&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span> *<span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    A(A&amp;&amp; other):x&#123;other.x&#125; &#123;</span><br><span class="line">        other.x = <span class="number">0</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Move constructor A(A&amp;&amp; other)&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    A&amp; <span class="keyword">operator</span> = (A&amp;&amp; other) &#123;</span><br><span class="line">        x = other.x;</span><br><span class="line">        other.x = <span class="number">0</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Move Assignment A(A&amp;&amp; other)&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span> *<span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function">A <span class="title">func_value_lvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">A&amp; <span class="title">func_lref_lvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 这个函数是编译不了的</span></span><br><span class="line"><span class="comment">A&amp;&amp; func_rref_lvaue() &#123;</span></span><br><span class="line"><span class="comment">    A a&#123;&#125;;</span></span><br><span class="line"><span class="comment">    return a;</span></span><br><span class="line"><span class="comment">&#125;*/</span></span><br><span class="line"></span><br><span class="line"><span class="function">A <span class="title">func_value_prvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> A();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 这个函数编译不了</span></span><br><span class="line"><span class="comment">/*A&amp; func_lref_prvalue() &#123;</span></span><br><span class="line"><span class="comment">    return A();</span></span><br><span class="line"><span class="comment">&#125;*/</span></span><br><span class="line"></span><br><span class="line"><span class="function">A&amp;&amp; <span class="title">func_rref_prvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> A();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">A <span class="title">func_value_xvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">std</span>::move(a);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 这个函数编译不了</span></span><br><span class="line"><span class="comment">/*A&amp; func_lref_xvalue() &#123;</span></span><br><span class="line"><span class="comment">    A a&#123;&#125;;</span></span><br><span class="line"><span class="comment">    return std::move(a);</span></span><br><span class="line"><span class="comment">&#125;*/</span></span><br><span class="line"></span><br><span class="line"><span class="function">A&amp;&amp; <span class="title">func_rref_xvalue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a&#123;&#125;;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">std</span>::move(a);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 这种情况，编译器会做优化NRVO，直接在调用者的栈上分配内存，因此，下面案例的输出为：</span></span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before：Value, Value, lValue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A tmp = func_value_lvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After：Value, Value, lValue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">//Before：Value, Value, lValue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee2444698</span></span><br><span class="line">        <span class="comment">//After：Value, Value, lValue</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee2444698</span></span><br><span class="line">    &#125;</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 函数返回定义的是值类型，返回的值只能绑定到const left ref</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;lref, Value, lValue(Not Allowed)&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">//A&amp; tmp = func_value_lvalue();</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before： const lref, Value, lValue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">const</span> A&amp; tmp = func_value_lvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After：const lref, Value, lValue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">//lref, Value, lValue(Not Allowed)</span></span><br><span class="line">        <span class="comment">//Before： const lref, Value, lValue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee2444678</span></span><br><span class="line">        <span class="comment">//After：const lref, Value, lValue</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee2444678</span></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 函数内部的</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before rref, value, lvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A&amp;&amp; tmp = func_value_lvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After rref, value, lvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">//Before rref, value, lvalue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee2444668</span></span><br><span class="line">        <span class="comment">//After rref, value, lvalue</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee2444668</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 这个操作是有问题的，引用虽然能绑定到值上，但是引用绑定前，func_rref_lvalue的对象早就释放了</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before: value, lref, lvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A tmp = func_lref_lvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After: value, lref, lvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">//Before: value, lref, lvalue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//Copy constructor A(const A&amp; other)0x7ffee2444660</span></span><br><span class="line">        <span class="comment">//After: value, lref, lvalue</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee2444660</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 这个操作也是有问题的，func_lref_lvalue 的对象早就释放了</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before: lref, lref, lvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A&amp; tmp = func_lref_lvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After: lref, lref, lvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">//Before: lref, lref, lvalue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//After: lref, lref, lvalue</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">//cout &lt;&lt; endl;</span></span><br><span class="line">        <span class="comment">// 这个操作也是有问题的，func_lref_lvalue 的对象早就释放了</span></span><br><span class="line">        <span class="comment">//cout &lt;&lt; &quot;Before: lref, lref, lvalue&quot; &lt;&lt; endl;</span></span><br><span class="line">        <span class="comment">// 编译不了</span></span><br><span class="line">        <span class="comment">//A&amp;&amp; tmp = func_lref_lvalue();</span></span><br><span class="line">       <span class="comment">// cout &lt;&lt; &quot;After: lref, lref, lvalue&quot; &lt;&lt; endl;</span></span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 这个操作也是有问题的，func_rref_lvalue的对象早就释放了</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before: value, rref, prvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A tmp = func_rref_prvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After: value, rref, prvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">//Before: value, rref, prvalue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//Move constructor A(A&amp;&amp; other)0x7ffee2444650</span></span><br><span class="line">        <span class="comment">//After: value, rref, prvalue</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee2444650</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//    &#123;    不能通过编译</span></span><br><span class="line"><span class="comment">//        cout &lt;&lt; endl;</span></span><br><span class="line"><span class="comment">//        cout &lt;&lt; &quot;Before: lvalue, rref, prvalue&quot; &lt;&lt; endl;</span></span><br><span class="line"><span class="comment">//        A&amp; tmp = func_rref_prvalue();</span></span><br><span class="line"><span class="comment">//        cout &lt;&lt; &quot;After: value, rref, prvalue&quot; &lt;&lt; endl;</span></span><br><span class="line"><span class="comment">//    &#125;</span></span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 这个操作也是有问题的， func_rref_prvalue返回时对象就销毁了</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before: rref, rref, prvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A&amp;&amp; tmp = func_rref_prvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After: rref, rref, prvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">//Before: rref, rref, prvalue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//After: rref, rref, prvalue</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 这个操作有问题，func_rref_xvalue 返回时对象就销毁了</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before: value, rref, xvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A tmp = func_rref_xvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After: value, rref, xvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// Before: value, rref, xvalue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//Move constructor A(A&amp;&amp; other)0x7ffee2444640</span></span><br><span class="line">        <span class="comment">//After: value, rref, xvalue</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee2444640</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">       <span class="comment">// 不能通过编译</span></span><br><span class="line">       <span class="comment">// A&amp; tmp = func_rref_xvalue();</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 这个操作有问题，func_rref_xvalue 返回时对象就销毁了</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before: rref, rref, xvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A&amp;&amp; tmp = func_rref_xvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After: rref, rref, xvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">//Before: rref, rref, xvalue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee24444b8</span></span><br><span class="line">        <span class="comment">//After: rref, rref, xvalue</span></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before: value, value, prvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A tmp = func_value_prvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After: value, value, prvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 输出如下</span></span><br><span class="line">        <span class="comment">//Before: value, value, prvalue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee0c19630</span></span><br><span class="line">        <span class="comment">//After: value, value, prvalue</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee0c19630</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">//编译不通过</span></span><br><span class="line">        <span class="comment">//A &amp;tmp = func_value_prvalue();</span></span><br><span class="line">        <span class="comment">//A&amp; tmp = func_value_xvalue();</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before: rref, value, prvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A&amp;&amp; tmp = func_value_prvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After: rref, value, prvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">//输出</span></span><br><span class="line">        <span class="comment">//Before: rref, value, prvalue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee3d18620</span></span><br><span class="line">        <span class="comment">//After: rref, value, prvalue</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee3d18620</span></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before: value, value, xvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A tmp = func_value_xvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After: value, value, xvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 输出</span></span><br><span class="line">        <span class="comment">//Before: rref, value, xvalue</span></span><br><span class="line">        <span class="comment">//Constructor A() 0x7ffee35e2430</span></span><br><span class="line">        <span class="comment">//Move constructor A(A&amp;&amp; other)0x7ffee35e2618</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee35e2430</span></span><br><span class="line">        <span class="comment">//After: rref, value, xvalue</span></span><br><span class="line">        <span class="comment">//Destructor ~A() 0x7ffee35e2618</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Before: rref, value, xvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        A &amp;&amp;tmp = func_value_xvalue();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;After: rref, value, xvalue&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="再讨论对象生命周期延长"><a href="#再讨论对象生命周期延长" class="headerlink" title="再讨论对象生命周期延长"></a>再讨论对象生命周期延长</h2><p>C++中默认所有的变量都是值的类型。除了引用和指针，任何对象的传递都会触发对象的构造（除非编译器优化了）。另外C++中移动语义是为了减少占用内存空间或者资源创建耗时的对象而存在的，被移动后原有对象对资源的所有权应该没了（指针应该置为nullptr，fd置为-1等，释放所有权，免得析构函数被调用的时候，把资源给释放掉了）</p>
+<p>对象生命周期的延长，其实就是被调用者上生成的对象，其内存地址是属于调用者的栈的。这样就可以达到，不使用拷贝构造函数就可以把被调用者上的对象（包括其拥有的资源）移转到调用者的变量上。生命周期延长是编译器做的，目的就是优化代码，减少拷贝构造函数的调用。这种优化就叫NRVO。</p>
+<p>以下例子：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span>&#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> x;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    A() &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Constructor A() &quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ~A() &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Destructor ~A() &quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    A(<span class="keyword">const</span> A&amp; other): x&#123;other.x&#125; &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Copy constructor A(const A&amp; other)&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    A&amp; <span class="keyword">operator</span> = (<span class="keyword">const</span> A&amp; other) &#123;</span><br><span class="line">        x = other.x;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Copy assignment operator =(const A&amp; other)&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span> *<span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    A(A&amp;&amp; other):x&#123;other.x&#125; &#123;</span><br><span class="line">        other.x = <span class="number">0</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Move constructor A(A&amp;&amp; other)&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    A&amp; <span class="keyword">operator</span> = (A&amp;&amp; other) &#123;</span><br><span class="line">        x = other.x;</span><br><span class="line">        other.x = <span class="number">0</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;Move Assignment A(A&amp;&amp; other)&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span> *<span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br><span class="line"><span class="function">A <span class="title">func_A_ref</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> c = <span class="number">10</span>;</span><br><span class="line">  A a;</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;fuction frame is &quot;</span> &lt;&lt; &amp;c &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  <span class="keyword">return</span> a;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> c = <span class="number">0</span>;</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;main frmae is &quot;</span> &lt;&lt; &amp;c &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;before call func_A_ref&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  A a = func_A_ref();</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;after call func_A_ref&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  A dumb&#123;&#125;;</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;dumb address is &quot;</span> &lt;&lt; &amp;dumb &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>正常编译<code>clang++ --std=c++11 test.cc</code>后，输出为,可以看出func_A_ref函数中的对象a的地址是0x7ffd08d0a5c8，是属于main函数栈上的，编译器优化了，减少拷贝构造函数的调用。（栈的增长是从高地址到低地址的）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">main frmae is 0x7fffb4f1c188</span><br><span class="line">before call func_A_ref</span><br><span class="line">Constructor A() 0x7fffb4f1c180</span><br><span class="line">fuction frame is 0x7fffb4f1c10c</span><br><span class="line">after call func_A_ref</span><br><span class="line">Constructor A() 0x7fffb4f1c170</span><br><span class="line">dumb address is 0x7fffb4f1c170</span><br><span class="line">Destructor ~A() 0x7fffb4f1c170</span><br><span class="line">Destructor ~A() 0x7fffb4f1c180</span><br></pre></td></tr></table></figure>
+
+<p>如果禁止延长生命周期的优化后编译：<code>clang++ --std=c++11 -fno-elide-constructors test.cc</code></p>
+<p>输出为：(使用了移动语义，而不是使用NRVO)</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">main frmae is 0x7ffe074bad88</span><br><span class="line">before call func_A_ref</span><br><span class="line">Constructor A() 0x7ffe074bacf8</span><br><span class="line">fuction frame is 0x7ffe074bacfc</span><br><span class="line">Move constructor A(A&amp;&amp; other)0x7ffe074bad78</span><br><span class="line">Destructor ~A() 0x7ffe074bacf8</span><br><span class="line">Move constructor A(A&amp;&amp; other)0x7ffe074bad80</span><br><span class="line">Destructor ~A() 0x7ffe074bad78</span><br><span class="line">after call func_A_ref</span><br><span class="line">Constructor A() 0x7ffe074bad68</span><br><span class="line">dumb address is 0x7ffe074bad68</span><br><span class="line">Destructor ~A() 0x7ffe074bad68</span><br><span class="line">Destructor ~A() 0x7ffe074bad80</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="编译器会尝试使用移动构造，而不是拷贝构造"><a href="#编译器会尝试使用移动构造，而不是拷贝构造" class="headerlink" title="编译器会尝试使用移动构造，而不是拷贝构造"></a>编译器会尝试使用移动构造，而不是拷贝构造</h2><p>下面的代码，编译器不能执行NRVO，因为存在分支判断的代码，因此编译器最多的优化到的程度就是使用移动构造函数代替拷贝构造函数，当然也是要类定义了移动构造函数才行。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function">A <span class="title">func_A_ref</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> c = <span class="number">10</span>;</span><br><span class="line">  A a1, a2;</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;fuction frame is &quot;</span> &lt;&lt; &amp;c &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  <span class="comment">// 有分支判断的情况，编译器不能进行NRVO优化的，因此需要进行构造。存在移动构造函数，就优先使用移动构造函数</span></span><br><span class="line">  <span class="keyword">if</span> (c == <span class="number">10</span>)</span><br><span class="line">    <span class="keyword">return</span> a1;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    <span class="keyword">return</span> a2;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> c = <span class="number">0</span>;</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;main frmae is &quot;</span> &lt;&lt; &amp;c &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;before call func_A_ref&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  A a = func_A_ref();</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">&quot;after call func_A_ref&quot;</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">main frmae is 0x7ffe1368eb1c</span><br><span class="line">before call func_A_ref</span><br><span class="line">Constructor A(): 0x7ffe1368eae8</span><br><span class="line">Constructor A(): 0x7ffe1368eae4</span><br><span class="line">fuction frame is 0x7ffe1368eaec</span><br><span class="line">Move Constructor: 0x7ffe1368eb18</span><br><span class="line">Destructor: 0x7ffe1368eae4</span><br><span class="line">Destructor: 0x7ffe1368eae8</span><br><span class="line">after call func_A_ref</span><br><span class="line">Destructor: 0x7ffe1368eb18</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="std-move-好心干坏事——禁止了NRVO"><a href="#std-move-好心干坏事——禁止了NRVO" class="headerlink" title="std::move 好心干坏事——禁止了NRVO"></a>std::move 好心干坏事——禁止了NRVO</h2><p>std::move的会把一个prvalue变成一个xvalue，但是NRVO只是针对prvalue的，因此如果我们在函数返回的时候，把一个prvalue编程了一个xvalue，最多能优化到使用移动构造函数。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">A func_A_ref() &#123;</span><br><span class="line">  int c &#x3D; 10;</span><br><span class="line">  cout &lt;&lt; &quot;fuction frame is &quot; &lt;&lt; &amp;c &lt;&lt; endl;</span><br><span class="line">  A a;</span><br><span class="line">  return std::move(a); &#x2F;&#x2F;本来NRVO可以优化掉一个移动构造函数的，因为std::move(a)后变成了一个xvalue</span><br><span class="line">&#125;; </span><br><span class="line"></span><br><span class="line">int main() &#123;</span><br><span class="line">  int c &#x3D; 0;</span><br><span class="line">  cout &lt;&lt; &quot;main frmae is &quot; &lt;&lt; &amp;c &lt;&lt; endl;</span><br><span class="line">  cout &lt;&lt; &quot;before call func_A_ref&quot; &lt;&lt; endl;</span><br><span class="line">  A a &#x3D; func_A_ref();</span><br><span class="line">  cout &lt;&lt; &quot;after call func_A_ref&quot; &lt;&lt; endl; </span><br><span class="line">  return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">main frmae is 0x7fff3a19c56c</span><br><span class="line">before call func_A_ref</span><br><span class="line">fuction frame is 0x7fff3a19c53c</span><br><span class="line">Constructor A(): 0x7fff3a19c538</span><br><span class="line">Move Constructor: 0x7fff3a19c568 &#x2F;&#x2F;多了一个移动构造函数</span><br><span class="line">Destructor: 0x7fff3a19c538</span><br><span class="line">after call func_A_ref</span><br><span class="line">Destructor: 0x7fff3a19c568</span><br></pre></td></tr></table></figure>
+
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
+  </div>
+  <br/>
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <span id="busuanzi_container_site_pv">【本站总访问量】<span id="busuanzi_value_site_pv"></span>次</span>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B3%E4%BA%8E%E5%87%BD%E6%95%B0%E5%A3%B0%E6%98%8E%E8%BF%94%E5%9B%9E%E5%80%BC%E7%B1%BB%E5%9E%8B%E5%92%8C%E5%87%BD%E6%95%B0%E8%BF%94%E5%9B%9E%E5%AF%B9%E8%B1%A1%E7%B1%BB%E5%9E%8B%E7%9A%84"><span class="toc-number">1.</span> <span class="toc-text">关于函数声明返回值类型和函数返回对象类型的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B3%E4%BA%8E%E5%AF%B9%E8%B1%A1%E5%91%A8%E6%9C%9F%E7%9A%84%E5%BB%B6%E9%95%BF"><span class="toc-number">2.</span> <span class="toc-text">关于对象周期的延长</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%8D%E8%AE%A8%E8%AE%BA%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E5%BB%B6%E9%95%BF"><span class="toc-number">3.</span> <span class="toc-text">再讨论对象生命周期延长</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E5%99%A8%E4%BC%9A%E5%B0%9D%E8%AF%95%E4%BD%BF%E7%94%A8%E7%A7%BB%E5%8A%A8%E6%9E%84%E9%80%A0%EF%BC%8C%E8%80%8C%E4%B8%8D%E6%98%AF%E6%8B%B7%E8%B4%9D%E6%9E%84%E9%80%A0"><span class="toc-number">4.</span> <span class="toc-text">编译器会尝试使用移动构造，而不是拷贝构造</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#std-move-%E5%A5%BD%E5%BF%83%E5%B9%B2%E5%9D%8F%E4%BA%8B%E2%80%94%E2%80%94%E7%A6%81%E6%AD%A2%E4%BA%86NRVO"><span class="toc-number">5.</span> <span class="toc-text">std::move 好心干坏事——禁止了NRVO</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&text=c++对象的生命周期"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&title=c++对象的生命周期"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&is_video=false&description=c++对象的生命周期"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=c++对象的生命周期&body=Check out this article: https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&title=c++对象的生命周期"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&title=c++对象的生命周期"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&title=c++对象的生命周期"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&title=c++对象的生命周期"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&name=c++对象的生命周期&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/&t=c++对象的生命周期"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2099
+    LJC
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GB2KNQXDVP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GB2KNQXDVP');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'https-leejiancai-github-io';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="1. kong部署拓扑结构图  目前使用的数据库是PostgreSQL,所有的kong节点都连接到同一个数据库上，kong集群间的数据同步依赖于数据库。当某一个kong节点，比如kong1节点的Admin API收到POST或PUT请求的时候，对应到数据库就是一个请求，新增、更新或者删除一条数据，会先更新数据库，然后在数据库的表cluster_events中新增一条记录，表示有更新数据库的行为，其">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LJC博客">
+<meta property="og:url" content="https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/index.html">
+<meta property="og:site_name" content="LJC博客">
+<meta property="og:description" content="1. kong部署拓扑结构图  目前使用的数据库是PostgreSQL,所有的kong节点都连接到同一个数据库上，kong集群间的数据同步依赖于数据库。当某一个kong节点，比如kong1节点的Admin API收到POST或PUT请求的时候，对应到数据库就是一个请求，新增、更新或者删除一条数据，会先更新数据库，然后在数据库的表cluster_events中新增一条记录，表示有更新数据库的行为，其">
+<meta property="og:locale">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121113749-20210301173926356.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114208-20210301173931638.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114521-20210301173937644.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114600-20210301174031369.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114627-20210301173942420.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114711-20210301173955090.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114731-20210301173950207.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114749-20210301174043310.png">
+<meta property="article:published_time" content="2021-03-01T13:27:06.317Z">
+<meta property="article:modified_time" content="2021-03-01T13:27:06.317Z">
+<meta property="article:author" content="LJC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121113749-20210301173926356.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>LJC博客</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="LJC博客" type="application/atom+xml" />
+    
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" href="/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&text="><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&title="><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&is_video=false&description="><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=&body=Check out this article: https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&title="><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&title="><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&title="><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&title="><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&name=&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&t="><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-kong%E9%83%A8%E7%BD%B2%E6%8B%93%E6%89%91%E7%BB%93%E6%9E%84%E5%9B%BE"><span class="toc-number">1.</span> <span class="toc-text">1. kong部署拓扑结构图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-Admin-API"><span class="toc-number">2.</span> <span class="toc-text">2. Admin API</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-dao%E5%92%8Cdb"><span class="toc-number">3.</span> <span class="toc-text">3. dao和db</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E5%90%8C%E4%B8%80%E4%B8%AA%E8%8A%82%E7%82%B9%E5%86%85%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E7%9A%84%E6%9B%B4%E6%96%B0%E6%9C%BA%E5%88%B6"><span class="toc-number">4.</span> <span class="toc-text">4.同一个节点内缓存失效的更新机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-%E8%8A%82%E7%82%B9%E9%97%B4%E5%90%8C%E6%AD%A5%E7%9A%84%E6%9C%BA%E5%88%B6"><span class="toc-number">5.</span> <span class="toc-text">5. 节点间同步的机制</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">LJC</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-03-01T13:27:06.317Z" itemprop="datePublished">2021-03-01</time>
+        
+        (Updated: <time datetime="2021-03-01T13:27:06.317Z" itemprop="dateModified">2021-03-01</time>)
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h2 id="1-kong部署拓扑结构图"><a href="#1-kong部署拓扑结构图" class="headerlink" title="1. kong部署拓扑结构图"></a>1. kong部署拓扑结构图</h2><p>  目前使用的数据库是PostgreSQL,所有的kong节点都连接到同一个数据库上，kong集群间的数据同步依赖于数据库。当某一个kong节点，比如kong1节点的Admin API收到POST或PUT请求的时候，对应到数据库就是一个请求，新增、更新或者删除一条数据，会先更新数据库，然后在数据库的表cluster_events中新增一条记录，表示有更新数据库的行为，其他的节点定时去读取cluster_events这个表，发现有新的数据后，就把对应的缓存删除，重新从数据库里读取。使用数据库作为集群通讯的节点，使得kong可以快速地实现横向扩展，新增节点只需要配置好数据库和配置文件，就可以上线，不需要修改其他节点的任何东西。</p>
+<p><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121113749-20210301173926356.png"></p>
+<h2 id="2-Admin-API"><a href="#2-Admin-API" class="headerlink" title="2. Admin API"></a>2. Admin API</h2><p>kong的admin api是通过lapis的web框架实现的。在kong/api/init.lua中初始化好admin api的模块，然后具体的代码是在kong/api/routes的目录下，有关于apis、services、routes等相关CRUD操作的实现，详细可以阅读代码。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">routes</span><br><span class="line">├── apis.lua</span><br><span class="line">├── cache.lua</span><br><span class="line">├── certificates.lua</span><br><span class="line">├── consumers.lua</span><br><span class="line">├── kong.lua</span><br><span class="line">├── plugins.lua</span><br><span class="line">├── routes.lua</span><br><span class="line">├── services.lua</span><br><span class="line">├── snis.lua</span><br><span class="line">└── upstreams.lua</span><br></pre></td></tr></table></figure>
+<p>另外在kong/templates/nginx_kong.lua中，在admin listener的模块中，定义了如何找到相对于的amdin api</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">location &#x2F; &#123;</span><br><span class="line">    default_type application&#x2F;json;</span><br><span class="line">    content_by_lua_block &#123;</span><br><span class="line">        kong.serve_admin_api()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在kong/api下还实现了一个crud_helpers.lua，对api、cache、services等操作数据库进行了抽象，调用crud_helpers提供的接口就可以实现对数据库的操作。</p>
+<h2 id="3-dao和db"><a href="#3-dao和db" class="headerlink" title="3. dao和db"></a>3. dao和db</h2><p>kong/dao和kong/db都是kong对数据库操作query进行了封装，目前支持的数据库有postgresql和Cassandra。其中dao是0.13.0版本前（0.13.0版本的kong引入了两个新的概念service和route替代api）对数据库的操作进行了抽象。</p>
+<ul>
+<li><p>kong/dao/da/init.lua对数据库实现的函数有如下：<br>  <img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114208-20210301173931638.png" alt="请在这里输入图片描述"><br>另外，kong/db是0.13.0版本后才出现的新的数据库模式，功能是跟kong/dao是一样的，新增加的service和route的相关抽象在这个模块下实现。</p>
+</li>
+<li><p>kong/db/dao/init.lua<br><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114521-20210301173937644.png" alt="请在这里输入图片描述"><br>在dao和db这两个模块对数据库进行crud操作后，会有一个的操作，分别用来通知本节点内其他的workers缓存失效和其他kong节点的缓存失效（以删除一行数据为例子）。</p>
+</li>
+<li><p>kong/dao/dao.lua中有：</p>
+<ul>
+<li>self.events.post_local(“dao:crud”, “delete”, {<br>  schema    = self.schema,<br>  operation = “delete”,<br>  entity    = row,<br>})<br><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114600-20210301174031369.png" alt="请在这里输入图片描述"></li>
+</ul>
+</li>
+<li><p>kong/db/dao/init.lua中有：</p>
+<ul>
+<li> self:post_crud_event(“delete”)<br><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114627-20210301173942420.png" alt="请在这里输入图片描述"></li>
+</ul>
+</li>
+</ul>
+<h2 id="4-同一个节点内缓存失效的更新机制"><a href="#4-同一个节点内缓存失效的更新机制" class="headerlink" title="4.同一个节点内缓存失效的更新机制"></a>4.同一个节点内缓存失效的更新机制</h2><p>kong同一节点内是通过事件的订阅和事件发布这种异步模式实现的。</p>
+<ul>
+<li>事件订阅<br><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114711-20210301173955090.png" alt="请在这里输入图片描述"><br>在kong/core/handler.lua的init_worker中，在worker初始化的时候就有注册订阅事件。在worker注册订阅事件后，会等待事件的发布。这是worker的全局事件分发器，这个事件的回调函数会根据传入来的数据，再发布相对应的crud事件。<ul>
+<li>细粒度crud事件的订阅<br><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114731-20210301173950207.png" alt="请在这里输入图片描述"></li>
+</ul>
+</li>
+<li>事件发布<ul>
+<li>上述第3节中的，dao和db中，更新完数据库，返回成功后就会发布这样的事件，来通知当前worker需要处理这个事件。当然这个会进入全局的事件分发器，再发布更细粒度的事件。<br><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181121114749-20210301174043310.png" alt="请在这里输入图片描述"></li>
+</ul>
+</li>
+</ul>
+<p>细粒度事件订阅的回调函数做的事情就比较简单，将当前worker缓存中的某一个cache的key置位失效，至于所有worker之间的cache同步，则由一个名为kong_cache的库实现，kogn_cache库又是对mlcache的封装。mlcache是三层的缓存架构，提供多个worker间的缓存同步失效机制，也有lru_cache的性能。后续再介绍这个库。<br>以route的更新为例，收到事件后，将cache中的”router:version”这个值置位无效。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">worker_events.register(function()</span><br><span class="line">        log(DEBUG, &quot;[events] Route updated, invalidating router&quot;)</span><br><span class="line">        cache:invalidate(&quot;router:version&quot;)</span><br><span class="line">      end, &quot;crud&quot;, &quot;routes&quot;)</span><br></pre></td></tr></table></figure>
+<p>核心的部分是调用：cache:invalidate,这个kong_cache提供的接口</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">function _M:invalidate(key)</span><br><span class="line">  if type(key) ~&#x3D; &quot;string&quot; then</span><br><span class="line">    return error(&quot;key must be a string&quot;)</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  self:invalidate_local(key)</span><br><span class="line"></span><br><span class="line">  local nbf</span><br><span class="line">  if self.propagation_delay &gt; 0 then</span><br><span class="line">    nbf &#x3D; ngx_now() + self.propagation_delay</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  log(DEBUG, &quot;broadcasting (cluster) invalidation for key: &#39;&quot;, key, &quot;&#39; &quot;,</span><br><span class="line">             &quot;with nbf: &#39;&quot;, nbf or &quot;none&quot;, &quot;&#39;&quot;)</span><br><span class="line"></span><br><span class="line">  local ok, err &#x3D; self.cluster_events:broadcast(&quot;invalidations&quot;, key, nbf)</span><br><span class="line">  if not ok then</span><br><span class="line">    log(ERR, &quot;failed to broadcast cached entity invalidation: &quot;, err)</span><br><span class="line">  end</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+<p>这个接口也是有2个核心的操作：</p>
+<ul>
+<li>self:invalidate_local(key) 使得这个key在所有worker中都失效</li>
+<li>self.cluster_events:broadcast(“invalidations”, key, nbf)，这个是在发布一个集群的事件，目前是使其他的kong节点能够知道某个key已经失效。实现的方式是在数据的cluster_events的表中插入一条记录，其他的节点会定时query这个表，得知某个key失效。因此集群间的同步是有延时的。定时读取数据库cluster_events表的间隔短，同步时间会减少，但是增加数据库压力，反之亦然。</li>
+</ul>
+<p>接着上面说到的”router:version”这个key失效后，对应到一个真实业务请求到达kong监听的接口时，怎么匹配都route呢？而这个key又有什么用呢？</p>
+<p>每个请求在nginx的access执行阶段，都是执行kong/init.lua里的access函数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">core.access.before(ctx)</span><br><span class="line"></span><br><span class="line">for plugin, plugin_conf in plugins_iterator(singletons.loaded_plugins, true) do</span><br><span class="line">  if not ctx.delayed_response then</span><br><span class="line">    local err &#x3D; coroutine.wrap(plugin.handler.access)(plugin.handler, plugin_conf)</span><br><span class="line">    if err then</span><br><span class="line">      ctx.delay_response &#x3D; false</span><br><span class="line">      return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)</span><br><span class="line">    end</span><br><span class="line">  end</span><br><span class="line">end</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<ul>
+<li>会先执行core.accees.before(ctx)</li>
+<li>再对当前route对应的service绑定的插件进行迭代，以此实现每个插件都会被执行一次。<br>核心的逻辑是在core.access.before上（代码在kong/core/handler.lua）：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">access &#x3D; &#123;</span><br><span class="line">   before &#x3D; function(ctx)</span><br><span class="line">     -- ensure routers are up-to-date</span><br><span class="line">     local cache &#x3D; singletons.cache</span><br><span class="line">     -- 省略部分代码</span><br><span class="line">     local version, err &#x3D; cache:get(&quot;router:version&quot;, CACHE_ROUTER_OPTS, utils.uuid)</span><br><span class="line">     if err then</span><br><span class="line">       log(ngx.CRIT, &quot;could not ensure router is up to date: &quot;, err)</span><br><span class="line"></span><br><span class="line">     elseif router_version ~&#x3D; version then</span><br><span class="line">       -- router needs to be rebuilt in this worker</span><br><span class="line">       log(DEBUG, &quot;rebuilding router&quot;)</span><br><span class="line"></span><br><span class="line">       local ok, err &#x3D; build_router(singletons.db, version)</span><br><span class="line">       if not ok then</span><br><span class="line">         router_err &#x3D; err</span><br><span class="line">         log(ngx.CRIT, &quot;could not rebuild router: &quot;, err)</span><br><span class="line">       end</span><br><span class="line">     end</span><br><span class="line"></span><br><span class="line">     --省略下面的代码</span><br></pre></td></tr></table></figure>
+原来，每次在请求的access阶段，都会从cache中读取到”router:version”这个key，然后判断这个所有的router是否发现了变化，如果发生了变化，就会重新调用build_router(singletons.db, version)去建立router，那么每次发生router的表curd操作的时候，每个worker都会重新调用build_router构建所有的routes。至此，从admin api到kong内部的逻辑识别到数据库发生变化在单个kong节点中已梳理好。</li>
+</ul>
+<h2 id="5-节点间同步的机制"><a href="#5-节点间同步的机制" class="headerlink" title="5. 节点间同步的机制"></a>5. 节点间同步的机制</h2><p>当一个worker收到数据库发生变更的事件后，会将当前节点缓存中的某个key置位无效。代码中会处理key失效的情况，通常实现都是去数据库中重新读取。那么kong的节点怎么知道事件的发生的呢？是kong在将本地的key置为无效后，会调用self.cluster_events:broadcast(“invalidations”, key, nbf)将某个key置为无效。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">function _M:invalidate(key)</span><br><span class="line">  -- 省略部分代码</span><br><span class="line"></span><br><span class="line">  log(DEBUG, &quot;broadcasting (cluster) invalidation for key: &#39;&quot;, key, &quot;&#39; &quot;,</span><br><span class="line">             &quot;with nbf: &#39;&quot;, nbf or &quot;none&quot;, &quot;&#39;&quot;)</span><br><span class="line"></span><br><span class="line">  local ok, err &#x3D; self.cluster_events:broadcast(&quot;invalidations&quot;, key, nbf)</span><br><span class="line">  if not ok then</span><br><span class="line">    log(ERR, &quot;failed to broadcast cached entity invalidation: &quot;, err)</span><br><span class="line">  end</span><br><span class="line">end</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>cluster_events.lua中broadcast的实现如下，本质上就是在数据库中插入一条记录。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">function _M:broadcast(channel, data, nbf)</span><br><span class="line"></span><br><span class="line">  -- 省略部分代码</span><br><span class="line"></span><br><span class="line">  local ok, err &#x3D; self.strategy:insert(self.node_id, channel, ngx_now(), data, nbf)</span><br><span class="line">  if not ok then</span><br><span class="line">    return nil, err</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  return true</span><br><span class="line">end</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>前面讲的是，如何实现在数据库的cluster_events表插入一条记录使得其他kong节点的缓存失效。那么，其他节点什么时候去读取数据库的cluster_events表呢，kong的实现是定时去读取数据库，这样的做法会导致节点同步时间不一样，是最终一致性。<br>在kong/init.lua中，会初始化一个cache，这个cache初始化的时候，就会启动一个定时器，定时去读取cluster_events这个表的内容。</p>
+<ul>
+<li><p>初始化cache</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">local cache, err &#x3D; kong_cache.new &#123;</span><br><span class="line">    cluster_events    &#x3D; cluster_events,</span><br><span class="line">    worker_events     &#x3D; worker_events,</span><br><span class="line">    propagation_delay &#x3D; configuration.db_update_propagation,</span><br><span class="line">    ttl               &#x3D; configuration.db_cache_ttl,</span><br><span class="line">    neg_ttl           &#x3D; configuration.db_cache_ttl,</span><br><span class="line">    resty_lock_opts   &#x3D; &#123;</span><br><span class="line">      exptime &#x3D; 10,</span><br><span class="line">      timeout &#x3D; 5,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>  cache里面的key有：<br>  router:version<br>  api_router:version</p>
+</li>
+<li><p>kong_cache.new的实现细节：</p>
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">local ok, err &#x3D; self.cluster_events:subscribe(&quot;invalidations&quot;, function(key)</span><br><span class="line">    log(DEBUG, &quot;received invalidate event from cluster for key: &#39;&quot;, key, &quot;&#39;&quot;)</span><br><span class="line">    self:invalidate_local(key)</span><br><span class="line">end)</span><br></pre></td></tr></table></figure>
+<p>关键是 self.cluster_events:subscribe会注册一个定时器。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">local ok, err &#x3D; timer_at(self.poll_interval, poll_handler, self)</span><br><span class="line">if not ok then</span><br><span class="line">  return nil, &quot;failed to start polling timer: &quot; .. err</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+<p>因此poll_handler会保证在间隔期间内，一个kong节点的所有workers只会poll一次，即读取数据库一次。如果有记录，就将某个key置为无效。比如key router:version变为无效后，跟上一节的节点内缓存失效的机制一样的，会判断到router:version发生了变化，需要去数据库读取route回来。</p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
+  </div>
+  <br/>
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <span id="busuanzi_container_site_pv">【本站总访问量】<span id="busuanzi_value_site_pv"></span>次</span>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-kong%E9%83%A8%E7%BD%B2%E6%8B%93%E6%89%91%E7%BB%93%E6%9E%84%E5%9B%BE"><span class="toc-number">1.</span> <span class="toc-text">1. kong部署拓扑结构图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-Admin-API"><span class="toc-number">2.</span> <span class="toc-text">2. Admin API</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-dao%E5%92%8Cdb"><span class="toc-number">3.</span> <span class="toc-text">3. dao和db</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E5%90%8C%E4%B8%80%E4%B8%AA%E8%8A%82%E7%82%B9%E5%86%85%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E7%9A%84%E6%9B%B4%E6%96%B0%E6%9C%BA%E5%88%B6"><span class="toc-number">4.</span> <span class="toc-text">4.同一个节点内缓存失效的更新机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-%E8%8A%82%E7%82%B9%E9%97%B4%E5%90%8C%E6%AD%A5%E7%9A%84%E6%9C%BA%E5%88%B6"><span class="toc-number">5.</span> <span class="toc-text">5. 节点间同步的机制</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&text="><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&title="><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&is_video=false&description="><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=&body=Check out this article: https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&title="><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&title="><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&title="><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&title="><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&name=&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/03/01/kong%E9%9B%86%E7%BE%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88%E6%9C%BA%E5%88%B6/&t="><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2099
+    LJC
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GB2KNQXDVP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GB2KNQXDVP');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'https-leejiancai-github-io';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+
+</body>
+</html>

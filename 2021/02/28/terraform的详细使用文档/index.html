@@ -15,7 +15,7 @@
 <meta property="og:locale">
 <meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181030172332-20210228014046819.png">
 <meta property="article:published_time" content="2021-02-28T01:34:35.000Z">
-<meta property="article:modified_time" content="2021-02-27T17:51:24.672Z">
+<meta property="article:modified_time" content="2021-03-01T13:27:06.317Z">
 <meta property="article:author" content="LJC">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181030172332-20210228014046819.png">
@@ -82,6 +82,8 @@
     <span id="actions">
       <ul>
         
+        <li><a class="icon" href="/2021/02/28/c-%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
         
         <li><a class="icon" href="/2021/02/26/k8s%E7%9A%84Service%E7%9A%84%E5%BA%95%E5%B1%82%E7%BD%91%E7%BB%9C%E8%BD%AC%E5%8F%91%E6%9C%BA%E5%88%B6/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
         
@@ -137,7 +139,7 @@
       
         <time datetime="2021-02-28T01:34:35.000Z" itemprop="datePublished">2021-02-28</time>
         
-        (Updated: <time datetime="2021-02-27T17:51:24.672Z" itemprop="dateModified">2021-02-27</time>)
+        (Updated: <time datetime="2021-03-01T13:27:06.317Z" itemprop="dateModified">2021-03-01</time>)
         
       
     </div>
@@ -357,22 +359,34 @@ salt-masterless
 - 整数：加(+)减(-)乘(*)除(/)和取余（%）
 </code></pre>
 <h2 id="terraform的内建函数（built-in-functions）"><a href="#terraform的内建函数（built-in-functions）" class="headerlink" title="terraform的内建函数（built-in functions）"></a>terraform的内建函数（built-in functions）</h2><ul>
-<li>abs(float)  一个浮点数（整数）的绝对值</li>
-<li>basename(path) 返回路径的basename</li>
-<li>base64decode(string) 字符串使用base64转换后的还原</li>
-<li>base64encode(string)  字符串使用base64转换</li>
-<li>index(list, elem) 返回列表中元素的索引</li>
-<li>join(delim, list) 返回一个由列表被插入分隔符后的字符串</li>
-<li>lookup(map, key, [default]) 查找map中一个key的值</li>
-<li>md5(string) 计算md5</li>
-<li>timestamp()  返回当前的UTC时间</li>
-<li>merge(map1,map2) 合并两个map</li>
-<li>format(format, args, …) 字符串的格式化</li>
-<li>还有其他的内建函数，可参考<br><a target="_blank" rel="noopener" href="https://www.terraform.io/docs/configuration/interpolation.html#built-in-functions">https://www.terraform.io/docs/configuration/interpolation.html#built-in-functions</a></li>
-</ul>
-<h2 id="依赖关系的查看"><a href="#依赖关系的查看" class="headerlink" title="依赖关系的查看"></a>依赖关系的查看</h2><ul>
-<li>terraform graph |dot -Tsvg &gt; graph.svg 会生成一个svg文件，可在本地查看。</li>
-<li>dot的工具：apt-get install  GraphViz<br><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181030172332-20210228014046819.png" alt="请在这里输入图片描述"></li>
+<li><p>abs(float)  一个浮点数（整数）的绝对值</p>
+</li>
+<li><p>basename(path) 返回路径的basename</p>
+</li>
+<li><p>base64decode(string) 字符串使用base64转换后的还原</p>
+</li>
+<li><p>base64encode(string)  字符串使用base64转换</p>
+</li>
+<li><p>index(list, elem) 返回列表中元素的索引</p>
+</li>
+<li><p>join(delim, list) 返回一个由列表被插入分隔符后的字符串</p>
+</li>
+<li><p>lookup(map, key, [default]) 查找map中一个key的值</p>
+</li>
+<li><p>md5(string) 计算md5</p>
+</li>
+<li><p>timestamp()  返回当前的UTC时间</p>
+</li>
+<li><p>merge(map1,map2) 合并两个map</p>
+</li>
+<li><p>format(format, args, …) 字符串的格式化</p>
+</li>
+<li><p>还有其他的内建函数，可参考<br><a target="_blank" rel="noopener" href="https://www.terraform.io/docs/configuration/interpolation.html#built-in-functions">https://www.terraform.io/docs/configuration/interpolation.html#built-in-functions</a></p>
+<h2 id="依赖关系的查看"><a href="#依赖关系的查看" class="headerlink" title="依赖关系的查看"></a>依赖关系的查看</h2></li>
+<li><p>terraform graph |dot -Tsvg &gt; graph.svg 会生成一个svg文件，可在本地查看。</p>
+</li>
+<li><p>dot的工具：apt-get install  GraphViz<br><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20181030172332-20210228014046819.png" alt="请在这里输入图片描述"></p>
+</li>
 </ul>
 <link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
   </div>
