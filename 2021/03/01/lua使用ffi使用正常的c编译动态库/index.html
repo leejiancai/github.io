@@ -14,7 +14,7 @@
 <meta property="og:description" content="[toc] RSA签名和验签的例子首先使用openssl的命令行，展示一下如何使用命令行的方式，用RSA的私钥对数据进行签名和用RSA的公钥对签名后的数据验签。 RSA其实有两种工作模式：  私钥签名，公钥验签 公钥加密，私钥解密  验证流程如下：  生成RSA的公私钥：  生成私钥：openssl genrsa -out private.pem 2048 根据私钥生成公钥：openssl rsa">
 <meta property="og:locale">
 <meta property="article:published_time" content="2021-03-01T21:52:39.000Z">
-<meta property="article:modified_time" content="2021-03-01T16:38:35.751Z">
+<meta property="article:modified_time" content="2021-03-02T12:58:02.721Z">
 <meta property="article:author" content="LJC">
 <meta property="article:tag" content="lua">
 <meta name="twitter:card" content="summary">
@@ -138,7 +138,7 @@
       
         <time datetime="2021-03-01T21:52:39.000Z" itemprop="datePublished">2021-03-01</time>
         
-        (Updated: <time datetime="2021-03-01T16:38:35.751Z" itemprop="dateModified">2021-03-01</time>)
+        (Updated: <time datetime="2021-03-02T12:58:02.721Z" itemprop="dateModified">2021-03-02</time>)
         
       
     </div>
@@ -217,6 +217,14 @@
 <p>lrwxrwxrwx 1 root root 35 Jun 18  2017 /usr/lib/x86_64-linux-gnu/libcrypt.so -&gt; /lib/x86_64-linux-gnu/libcrypt.so.1</p>
 </blockquote>
 <p>crypto的库放的位置，跟Linux系统的动态库加载机制有关系了。不是luajit的机制了。因此，只需要Linux系统上有着库就可以了。</p>
+<p>Linux的动态库搜索顺序是：</p>
+<ol>
+<li>编译目标代码时指定的动态库搜索路径</li>
+<li>环境变量LD_LIBRARY_PATH指定的动态库搜索路径</li>
+<li>配置文件/etc/ld.so.conf中指定的动态库搜索路径</li>
+<li>默认的动态库搜索路径/lib</li>
+<li>默认的动态库搜索路径/usr/lib</li>
+</ol>
 <h2 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h2><p>除了使用ffi作为中间层使用C的动态库，也可以直接编译一个C的动态库后，不需要ffi这个中间层就可以被lua脚本调用。这个就需要在编写这个C的动态库的时候，就按照符合lua的规范去实现了。cjson就是一个这样的库，它就放在目录/usr/local/openresty/lualib/下，名为cjson.so。</p>
 <blockquote>
 <p>ls /usr/local/openresty/lualib/cjson.so</p>
