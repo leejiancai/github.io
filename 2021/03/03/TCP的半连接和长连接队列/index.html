@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="[TOC] 半连接队列和全连接队列 半连接队列（half open queue&#x2F;SYN queue）：TCP监听的端口收到SYN包后，会把当前连接（五元组）放到半连接队列进行管理。半连接队列的长度是以一个监听的端口为粒度的，半连接队列的最大容量计算公式为：max(tcp_max_syn_backlog, 64),其中tcp_max_syn_backlog为系统参数。  全连接队列（accept q">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TCP的半连接和长连接队列">
+<meta property="og:url" content="https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/index.html">
+<meta property="og:site_name" content="LJC博客">
+<meta property="og:description" content="[TOC] 半连接队列和全连接队列 半连接队列（half open queue&#x2F;SYN queue）：TCP监听的端口收到SYN包后，会把当前连接（五元组）放到半连接队列进行管理。半连接队列的长度是以一个监听的端口为粒度的，半连接队列的最大容量计算公式为：max(tcp_max_syn_backlog, 64),其中tcp_max_syn_backlog为系统参数。  全连接队列（accept q">
+<meta property="og:locale">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/image-20210303110131397.png">
+<meta property="article:published_time" content="2021-03-03T11:00:11.000Z">
+<meta property="article:modified_time" content="2021-03-04T14:35:46.104Z">
+<meta property="article:author" content="LJC">
+<meta property="article:tag" content="tcp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/image-20210303110131397.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>TCP的半连接和长连接队列</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="LJC博客" type="application/atom+xml" />
+    
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2021/03/03/grpcurl%E5%B7%A5%E5%85%B7%E7%9A%84%E4%BD%BF%E7%94%A8/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2021/03/03/c-%E9%9A%90%E5%BC%8F%E5%92%8C%E6%98%BE%E5%BC%8F%E8%BD%AC%E6%8D%A2/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&text=TCP的半连接和长连接队列"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&title=TCP的半连接和长连接队列"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&is_video=false&description=TCP的半连接和长连接队列"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=TCP的半连接和长连接队列&body=Check out this article: https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&title=TCP的半连接和长连接队列"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&title=TCP的半连接和长连接队列"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&title=TCP的半连接和长连接队列"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&title=TCP的半连接和长连接队列"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&name=TCP的半连接和长连接队列&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&t=TCP的半连接和长连接队列"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97"><span class="toc-number">1.</span> <span class="toc-text">半连接队列和全连接队列</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E9%98%B2%E5%BE%A1SYN-FLOOD%E5%92%8CSYN-cookie%E7%9A%84%E6%9C%BA%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">如何防御SYN FLOOD和SYN cookie的机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TCP%E5%8F%82%E6%95%B0%E8%B0%83%E4%BC%98"><span class="toc-number">3.</span> <span class="toc-text">TCP参数调优</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        TCP的半连接和长连接队列
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">LJC</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-03-03T11:00:11.000Z" itemprop="datePublished">2021-03-03</time>
+        
+        (Updated: <time datetime="2021-03-04T14:35:46.104Z" itemprop="dateModified">2021-03-04</time>)
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/tcp/" rel="tag">tcp</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>[TOC]</p>
+<h2 id="半连接队列和全连接队列"><a href="#半连接队列和全连接队列" class="headerlink" title="半连接队列和全连接队列"></a>半连接队列和全连接队列</h2><ul>
+<li><p>半连接队列（half open queue/SYN queue）：TCP监听的端口收到SYN包后，会把当前连接（五元组）放到半连接队列进行管理。半连接队列的长度是以一个监听的端口为粒度的，半连接队列的最大容量计算公式为：<code>max(tcp_max_syn_backlog, 64)</code>,其中tcp_max_syn_backlog为系统参数。</p>
+</li>
+<li><p>全连接队列（accept queue）：TCP三次握手成功后（收到最后一个由Client发来的ACK），从半连接队列取出请求放到全连接队列。值得注意的是，当应用层的accept()调用返回后，连接会从全连接队列中移除。因此accept queue当前长度并不能代表已经建立好（accepted）的连接。全连接队列的容量计算公式为：<code>min(net.core.somaxconn, backlog)</code>,其中net.core.somaxconn为系统参数，backlog是TCP连接监听时候的参数，如</p>
+<blockquote>
+<p>int listen(int sockfd, int backlog);</p>
+<p>reThe  backlog  argument  defines  the maximum length to which the queue of pending connections for sockfd may grow.  If a connection request arrives when the queue is full, the client may receive an error with an indication of</p>
+<pre><code>ECONNREFUSED or, if the underlying protocol supports retransmission, the request may be ignored so that a later reattempt at connection succeeds
+</code></pre>
+</blockquote>
+</li>
+<li><p>查看系统参数的方式：<code>sysctl -a|grep tcp_max_syn_backlog</code></p>
+</li>
+<li><p>队列满的表现和报错方式：</p>
+<ul>
+<li>半连接队列满了：<ul>
+<li>当net.ipv4.tcp_syncookies=0时，SYN packet会被丢弃</li>
+<li>当net.ipv4.tcp_syncookies=1时<ul>
+<li>如果全连接队列满了,SYN会被丢弃</li>
+<li>除上述情况外，生成SYN cookie并且返回SYN/ACK。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Server会丢弃当前连接， client 会收到connection time out；只要是 client 没有收到 SYN+ACK，3s 之后，client 会再次发送，如果依然没有收到，9s 之后会继续发送。</li>
+<li>全连接队列满后，收到ACK packet：<ul>
+<li>tcp_abort_on_overflow=1的情况：直接返回RST通知客户端，相应的收到read timeout 或者 connection reset by peer。</li>
+<li>tcp_abort_on_overflow=0的情况：忽略收到的ACK包，继续让连接放在SYN Queue中，等到连接的定时器超时后会继续发送SYN/ACK包给客户端，客户端会继续发送ACK给服务端。重试的次数由参数net.ipv4.tcp_synack_retries决定。此外，当全连接队列满了之后，内核会限制请求放到SYN队列中的，因此新的请求发送SYN给服务端后，有可能SYN的packet会被丢弃，要依赖客户端重试发送SYN的机制。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>队列的状态图：</p>
+<p>注意的是，即使三次握手完成了，也是需要应用层调用accept()把请求从Accept Queue中取出，Accept Queue里面的连接才会减1</p>
+</li>
+</ul>
+<p><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/image-20210303110131397.png" alt="image-20210303110131397"></p>
+<ul>
+<li><p>观察方法：</p>
+<ul>
+<li><p>全连接队列的容量和当前的长度，通过如下方法就可以判断全连接队列是不是满了</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ss -anlt |grep -E <span class="string">&quot;8080|State&quot;</span></span><br><span class="line">State      Recv-Q Send-Q Local Address:Port               Peer Address:Port</span><br><span class="line">LISTEN     3      2      127.0.0.1:8080                     *:*</span><br></pre></td></tr></table></figure>
+
+<p>其中，处于LISTEN状态的Socket中，Send-Q 的值为当前Socket的Accept Queue的容量，为2；Recv-Q的值为当前Accept Queue的长度，为3。这里的Accept Queue长度比容量还大1，表明在具体实现上是有出入的。</p>
+</li>
+<li><p>半连接队列移除的报错信息，可以通过netstat工具查看</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">netstat -s|grep overflow</span><br><span class="line">    449 <span class="built_in">times</span> the listen queue of a socket overflowed</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>补充ESTAB状态的连接的Send-Q和Recv-Q的参数含义：</p>
+<p>Recv-Q代表还没拷贝到用户空间的数据字节数量。Send-Q代表发送到了对端，但是还没收到对端的ACK的数据字节数量。</p>
+<blockquote>
+<p>Recv-Q</p>
+<p>Established: The count of bytes not copied by the user program connected to this socket.</p>
+<p>Listening: Since Kernel 2.6.18 this column contains the current syn backlog. （Accept queue）</p>
+<p>Send-Q</p>
+<p>Established: The count of bytes not acknowledged by the remote host.</p>
+<p>Listening: Since Kernel 2.6.18 this column contains the maximum size of the syn backlog.</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="如何防御SYN-FLOOD和SYN-cookie的机制"><a href="#如何防御SYN-FLOOD和SYN-cookie的机制" class="headerlink" title="如何防御SYN FLOOD和SYN cookie的机制"></a>如何防御SYN FLOOD和SYN cookie的机制</h2><ul>
+<li>减少SYN-ACK的重发次数：<code>sysctl -w net.ipv4.tcp_synack_retries=3</code></li>
+<li>使用SYN cookie的技术：<code>sysctl -w net.ipv4.tcp_syncookies=1</code></li>
+<li>增加backlog队列的长度，这个需要应用listen时候调整，也需要内核参数调整：<code>sysctl -w net.ipv4.tcp_max_syn_backlog=2048</code></li>
+<li>限制SYN的并发数，实际的数量需要视业务具体情况设置：<code>iptables -A INPUT -p tcp --syn -m limit --limit 1/s -j ACCEPT --limit 1/s</code></li>
+</ul>
+<p>SYN Cookie机制：SYN Cookie时对客户端透明的，只在服务端进行修改了。启动SYN Cookie后，服务端收到一个SYN请求，是不会把请求放到半连接上的，而是生成一个Cookie值作为SYN/ACK包的seq号（初始序列号）。当客户端收到SYN/ACK后，就会执行三次握手的最后一个阶段——返回ACK包，ACK包中的ack号就是服务器上一步返回给客户端的Cookie+1。当服务端收到最后一个ACK的时候，就会按照算法再次去计算Cookie值，Cookie值相等就认为是一个正常的连接。</p>
+<p>因此，关键是cookie的计算过程，cookie的生成机制需要考虑：安全、性能、时效</p>
+<ul>
+<li><p>计算公式是：mac = MAC(A, key)。MAC是密码学中的一个消息认证码函数，也就是满足某种安全性质的带密钥的hash函数，它能够提供mac计算中需要的安全性。在Linux实现中，MAC函数为SHA1。SHA1既能兼顾安全和性能。注意mac还不是最后的cookie</p>
+</li>
+<li><p>key是一个服务器独有的密钥，是一组随机数。t是系统启动的时间，每60s加1，因此在网络环境不好的环境下，刚好跨越60s的界限的时候，有可能握手会失败。<strong>MSSIND</strong> 为**<code>MSS</code>**对应的索引。</p>
+</li>
+<li><p>cookie生成还需要能够把握手第一个包的TCP相关参数保存下来，因此还需要额外的机制。具体怎么做，后续再深入。</p>
+</li>
+</ul>
+<h2 id="TCP参数调优"><a href="#TCP参数调优" class="headerlink" title="TCP参数调优"></a>TCP参数调优</h2><p>三个重要的参数需要调整，半连接队列容量、全连接队列容量和nf conntrack模块的流数量。建议值为：</p>
+<blockquote>
+<p>net.ipv4.tcp_max_syn_backlog = 8192 </p>
+<p>net.core.somaxconn = 4096 </p>
+<p>net.netfilter.nf_conntrack_max = 5000000</p>
+</blockquote>
+<p>除了TCP的参数外，还需要增加文件描述符的数量上限。具体配置不在这里展开。</p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
+  </div>
+  <br/>
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <span id="busuanzi_container_site_pv">【本站总访问量】<span id="busuanzi_value_site_pv"></span>次</span>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97"><span class="toc-number">1.</span> <span class="toc-text">半连接队列和全连接队列</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E9%98%B2%E5%BE%A1SYN-FLOOD%E5%92%8CSYN-cookie%E7%9A%84%E6%9C%BA%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">如何防御SYN FLOOD和SYN cookie的机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TCP%E5%8F%82%E6%95%B0%E8%B0%83%E4%BC%98"><span class="toc-number">3.</span> <span class="toc-text">TCP参数调优</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&text=TCP的半连接和长连接队列"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&title=TCP的半连接和长连接队列"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&is_video=false&description=TCP的半连接和长连接队列"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=TCP的半连接和长连接队列&body=Check out this article: https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&title=TCP的半连接和长连接队列"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&title=TCP的半连接和长连接队列"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&title=TCP的半连接和长连接队列"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&title=TCP的半连接和长连接队列"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&name=TCP的半连接和长连接队列&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/03/03/TCP%E7%9A%84%E5%8D%8A%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%95%BF%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/&t=TCP的半连接和长连接队列"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2099
+    LJC
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GB2KNQXDVP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GB2KNQXDVP');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'https-leejiancai-github-io';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+
+</body>
+</html>
