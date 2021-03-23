@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="[toc] 1. 背景WebAssembly简称WASM，是Envoy扩展功能的一种机制，可以使得用户可以灵活实现需求。WASM支持多种开发语言开发，并且其性能接近原生的Envoy C++的代码，因此其灵活性和性能都是相当好的。与Envoy的lua扩展相比，WASM需要编译，在运维和操作灵活性上比lua脚本差一点，但是其扩展能力更强，并且支持多语言开发。lua的语言开发，第三方库较少。 2. He">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Istio挂载remote的wasm代码">
+<meta property="og:url" content="https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/index.html">
+<meta property="og:site_name" content="LJC博客">
+<meta property="og:description" content="[toc] 1. 背景WebAssembly简称WASM，是Envoy扩展功能的一种机制，可以使得用户可以灵活实现需求。WASM支持多种开发语言开发，并且其性能接近原生的Envoy C++的代码，因此其灵活性和性能都是相当好的。与Envoy的lua扩展相比，WASM需要编译，在运维和操作灵活性上比lua脚本差一点，但是其扩展能力更强，并且支持多语言开发。lua的语言开发，第三方库较少。 2. He">
+<meta property="og:locale">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20210305155415-20210305155503329.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20210305155525.png">
+<meta property="article:published_time" content="2021-03-05T15:50:50.000Z">
+<meta property="article:modified_time" content="2021-03-23T08:07:47.573Z">
+<meta property="article:author" content="LJC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20210305155415-20210305155503329.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Istio挂载remote的wasm代码</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="LJC博客" type="application/atom+xml" />
+    
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2021/03/04/Envoy%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-Stats%E5%8A%9F%E8%83%BD/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&text=Istio挂载remote的wasm代码"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&title=Istio挂载remote的wasm代码"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&is_video=false&description=Istio挂载remote的wasm代码"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Istio挂载remote的wasm代码&body=Check out this article: https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&title=Istio挂载remote的wasm代码"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&title=Istio挂载remote的wasm代码"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&title=Istio挂载remote的wasm代码"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&title=Istio挂载remote的wasm代码"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&name=Istio挂载remote的wasm代码&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&t=Istio挂载remote的wasm代码"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">1. 背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-Hello-World"><span class="toc-number">2.</span> <span class="toc-text">2. Hello  World</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Istio挂载remote的wasm代码
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">LJC</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-03-05T15:50:50.000Z" itemprop="datePublished">2021-03-05</time>
+        
+        (Updated: <time datetime="2021-03-23T08:07:47.573Z" itemprop="dateModified">2021-03-23</time>)
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>[toc]</p>
+<h2 id="1-背景"><a href="#1-背景" class="headerlink" title="1. 背景"></a>1. 背景</h2><p>WebAssembly简称WASM，是Envoy扩展功能的一种机制，可以使得用户可以灵活实现需求。WASM支持多种开发语言开发，并且其性能接近原生的Envoy C++的代码，因此其灵活性和性能都是相当好的。与Envoy的lua扩展相比，WASM需要编译，在运维和操作灵活性上比lua脚本差一点，但是其扩展能力更强，并且支持多语言开发。lua的语言开发，第三方库较少。</p>
+<h2 id="2-Hello-World"><a href="#2-Hello-World" class="headerlink" title="2. Hello  World"></a>2. Hello  World</h2><p>Envoy的源码examples中，有一个关于wasm的demo，我们使用其作为一个Demo演示一下如何编译wasm，并且将wasm注入到已经在运行的Istio集群的Ingressgateway网关中。</p>
+<ul>
+<li><p>代码路径：examples/wasm-cc    </p>
+</li>
+<li><p>编译工具：当然是Envoy标准的Bazel</p>
+</li>
+<li><p>编译命令： bazel build     //examples/wasm-cc:envoy_filter_http_wasm_example.wasm</p>
+</li>
+<li><ul>
+<li>这里注意，bazel在编译中，会cache很多工具到~/cache/bazel目录下，如果当前目录空间不足，需要在有充足空间的磁盘上建一个目录，然后把～/.cache/bazel软连接到新的目录中，保证编译过程中不会出现空间不足的问题。ln -s      /home/bazel_cache/bazel/ /root/.cache/bazel</li>
+</ul>
+</li>
+<li><p>编译成功后的wasm文件在目录bazel-bin/examples/wasm-cc/下,文件名为envoy_filter_http_wasm_example.wasm</p>
+</li>
+<li><p>切换到目录bazel-bin/examples/wasm-cc/下，运行一个http server（用于后面Envoy到这里拉取wasm文件，在生产环境中需要自己部署好这些服务，并且做好维护和升级的工作）：python3 -m     http.server</p>
+</li>
+<li><p>使用EnvoyFilter为Istio集群的istio-system命令空间下的Ingressgateway注入一个wasm配置</p>
+</li>
+<li><ul>
+<li>检查当前Ingressgateway的入口端口是什么，在v1.8.2版本中默认是8080端口，所以使用EnvoyFilter注入的时候，选择8080端口就可以了。</li>
+</ul>
+</li>
+<li><p>部署好Istio官方提供的Bookinfo例子（需要在网关入口暴露productpage服务）</p>
+</li>
+<li><p>编写EnvoyFilter的配置文件</p>
+</li>
+<li><p>apply     配置文件：kubectl -n istio-system apply -f wasm_envoyfilter.yaml</p>
+</li>
+<li><p>检查一下wasm文件配置时候生效：</p>
+<blockquote>
+<p>➜** <strong>istio curl</strong> <a target="_blank" rel="noopener" href="http://192.168.99.102:31318/productpage"><strong>http://192.168.99.102:31318/productpage</strong></a> <strong>-v 2&gt;&amp;1 |rg “FOO|Hello”</strong></p>
+<p><strong>&lt; x-wasm-custom: FOO</strong></p>
+<p>*<em>Hello, world\</em> Closing connection 0</p>
+</blockquote>
+</li>
+</ul>
+<p> <strong>可以看到**</strong>，wasm已经生效了。因为Demo就是往response中添加一个x**<strong>-wasm-custom头部和在body中添加 Hello, world</strong></p>
+<ul>
+<li><p><strong>总结和重点</strong>: </p>
+</li>
+<li><ul>
+<li><p><strong>wasm的文件最好通过remote模式获取到，因为local的模式还要把wasm文件挂载到容器中，对容器的配置有侵入。而且放置在一个remote的文件存储管理平台，提供HTTP服务，有利于中心化管理和分发我们的wasm文件，后续可以扩展成一个repo，提供各种定制或通用的功能</strong></p>
+</li>
+<li><p><strong>使用remote模式挂载wasm文件，需要自定义一个Cluster，然后被wasm的remote配置引用。</strong></p>
+<p><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20210305155415-20210305155503329.png"></p>
+</li>
+<li><p><strong>remote**</strong>模式引用**<strong>wasm**</strong>文件的方式是**</p>
+<p><img src="https://raw.githubusercontent.com/leejiancai/image_repo/master/img/20210305155525.png"></p>
+</li>
+</ul>
+</li>
+</ul>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
+  </div>
+  <br/>
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <span id="busuanzi_container_site_pv">【本站总访问量】<span id="busuanzi_value_site_pv"></span>次</span>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">1. 背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-Hello-World"><span class="toc-number">2.</span> <span class="toc-text">2. Hello  World</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&text=Istio挂载remote的wasm代码"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&title=Istio挂载remote的wasm代码"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&is_video=false&description=Istio挂载remote的wasm代码"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Istio挂载remote的wasm代码&body=Check out this article: https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&title=Istio挂载remote的wasm代码"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&title=Istio挂载remote的wasm代码"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&title=Istio挂载remote的wasm代码"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&title=Istio挂载remote的wasm代码"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&name=Istio挂载remote的wasm代码&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/&t=Istio挂载remote的wasm代码"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2099
+    LJC
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GB2KNQXDVP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GB2KNQXDVP');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'https-leejiancai-github-io';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+
+</body>
+</html>

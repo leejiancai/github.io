@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="[toc] 1. 运行时是什么 所谓的运行时，就是在Envoy在运行时候，通过某些手段修改一些配置，达到影响Envoy运行逻辑的目的的手段。xDS也可以认为是一种运行时配置管理，Envoy支持多个运行时配置方式。   在旧版本的Envoy中，是config.bootstrap.v3.Runtime。在最新版的Envoy中，是采用的是config.bootstrap.v3.LayeredRuntim">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Envoy运行时Runtime配置">
+<meta property="og:url" content="https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/index.html">
+<meta property="og:site_name" content="LJC博客">
+<meta property="og:description" content="[toc] 1. 运行时是什么 所谓的运行时，就是在Envoy在运行时候，通过某些手段修改一些配置，达到影响Envoy运行逻辑的目的的手段。xDS也可以认为是一种运行时配置管理，Envoy支持多个运行时配置方式。   在旧版本的Envoy中，是config.bootstrap.v3.Runtime。在最新版的Envoy中，是采用的是config.bootstrap.v3.LayeredRuntim">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-03-05T19:47:50.000Z">
+<meta property="article:modified_time" content="2021-03-23T08:07:47.573Z">
+<meta property="article:author" content="LJC">
+<meta property="article:tag" content="Envoy">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Envoy运行时Runtime配置</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="LJC博客" type="application/atom+xml" />
+    
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" href="/2021/03/05/Istio%E6%8C%82%E8%BD%BDremote%E7%9A%84wasm%E4%BB%A3%E7%A0%81/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&text=Envoy运行时Runtime配置"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&title=Envoy运行时Runtime配置"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&is_video=false&description=Envoy运行时Runtime配置"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Envoy运行时Runtime配置&body=Check out this article: https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&title=Envoy运行时Runtime配置"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&title=Envoy运行时Runtime配置"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&title=Envoy运行时Runtime配置"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&title=Envoy运行时Runtime配置"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&name=Envoy运行时Runtime配置&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&t=Envoy运行时Runtime配置"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E8%BF%90%E8%A1%8C%E6%97%B6%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-number">1.</span> <span class="toc-text">1. 运行时是什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E5%85%B8%E5%9E%8B%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">2.</span> <span class="toc-text">2. 典型应用场景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E9%87%8D%E7%82%B9%E8%AF%B4%E4%B8%80%E4%B8%8BDiskLayer"><span class="toc-number">3.</span> <span class="toc-text">3. 重点说一下DiskLayer</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Envoy运行时Runtime配置
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">LJC</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-03-05T19:47:50.000Z" itemprop="datePublished">2021-03-05</time>
+        
+        (Updated: <time datetime="2021-03-23T08:07:47.573Z" itemprop="dateModified">2021-03-23</time>)
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/Envoy/" rel="tag">Envoy</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>[toc]</p>
+<h2 id="1-运行时是什么"><a href="#1-运行时是什么" class="headerlink" title="1. 运行时是什么"></a>1. 运行时是什么</h2><p> 所谓的运行时，就是在Envoy在运行时候，通过某些手段修改一些配置，达到影响Envoy运行逻辑的目的的手段。xDS也可以认为是一种运行时配置管理，Envoy支持多个运行时配置方式。</p>
+<p>  在旧版本的Envoy中，是config.bootstrap.v3.Runtime。在最新版的Envoy中，是采用的是config.bootstrap.v3.LayeredRuntime。 layeredRuntime与docker镜像的文件系统类似，上一层的文件会覆盖掉底层的文件（如果有），这样就可以实现灵活的运行时配置了。</p>
+<p>典型的LayeredRuntime配置是：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">layers:</span></span><br><span class="line">	<span class="bullet">-</span> <span class="attr">name:</span> <span class="string">static_layer_0</span></span><br><span class="line">	  <span class="attr">static_layer:</span></span><br><span class="line">	    <span class="attr">health_check:</span></span><br><span class="line">	      <span class="attr">min_interval:</span> <span class="number">5</span></span><br><span class="line">	<span class="bullet">-</span> <span class="attr">name:</span> <span class="string">disk_layer_0</span></span><br><span class="line">	  <span class="attr">disk_layer:</span> &#123; <span class="attr">symlink_root:</span> <span class="string">/srv/runtime/current</span>, <span class="attr">subdirectory:</span> <span class="string">envoy</span> &#125;</span><br><span class="line">	<span class="bullet">-</span> <span class="attr">name:</span> <span class="string">disk_layer_1</span></span><br><span class="line">	  <span class="attr">disk_layer:</span> &#123; <span class="attr">symlink_root:</span> <span class="string">/srv/runtime/current</span>, <span class="attr">subdirectory:</span> <span class="string">envoy_override</span>, <span class="attr">append_service_cluster:</span> <span class="literal">true</span> &#125;</span><br><span class="line">	<span class="bullet">-</span> <span class="attr">name:</span> <span class="string">admin_layer_0</span></span><br><span class="line">    <span class="attr">admin_layer:</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>LayeredRuntime可以配置多个layers，layer的类型是RuntimeLayer，目前支持四种类型的RuntimeLayer：</p>
+<ul>
+<li>static_layer,     一般都是放置在最底层（0层），用于设置默认的配置。</li>
+<li>disk_layer,     这个是读取本地文件系统的。一般目录是一个链接目录（一个树状结构的目录）。这样，目录下的所有文件都可以通过链接文件重新指向别的目录，达到配置动态修改的目的。</li>
+<li>admin_layer:     这一层是通过Envoy的管理API进行修改的，可以实现Admin动态修改Envoy的配置的目的</li>
+<li>rtds_layer:     rtds是xDS协议的一部分，这样Envoy就可以实现订阅xDS服务器分发的配置，达到配置全局分发管理的效果。</li>
+</ul>
+<p>可以看出，通过上述的四种RuntimeLayer的使用，可以实现一个既配置简单（放在static_layer或disk_layer,作为系统最通用的配置），然后通过admin_layer或rtds_layer实现灵活的修改（而且是可以通过配置管理中心的工具实现）。</p>
+<h2 id="2-典型应用场景"><a href="#2-典型应用场景" class="headerlink" title="2. 典型应用场景"></a>2. 典型应用场景</h2><p>用于Envoy的废弃特性（功能）的循序渐进的废弃的功能。Envoy中，废弃一个功能的时候，分如下的阶段：</p>
+<ul>
+<li><p>阶段1-warn-by-default,：在日志中输出警告日志，警告用户尽早使用其他的特性实现当前的需求</p>
+</li>
+<li><p>阶段2-fail-by-default：     如果配置文件中，使用了某个特性的配置，配置文件校验阶段就会拒绝，但是可以通过一个Runtime配置来继续使用将要废弃的特性的目的（此时代码还没移除）。下面例子中，可以看到hidden_envoy_deprecated_use_original_dst设置为true，use_original_dst的功能就启用了。</p>
+  <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line"> <span class="attr">&quot;layered_runtime&quot;</span>:&#123;</span><br><span class="line">   <span class="attr">&quot;layers&quot;</span>:[</span><br><span class="line">     &#123;</span><br><span class="line">       <span class="attr">&quot;name&quot;</span>:<span class="string">&quot;deprecation&quot;</span>,</span><br><span class="line">       <span class="attr">&quot;static_layer&quot;</span>:&#123;</span><br><span class="line">         <span class="attr">&quot;envoy.deprecated_features:envoy.config.listener.v3.Listener.hidden_envoy_deprecated_use_original_dst&quot;</span>:<span class="literal">true</span></span><br><span class="line">       &#125;</span><br><span class="line">     &#125;,</span><br><span class="line">     &#123;</span><br><span class="line">       <span class="attr">&quot;name&quot;</span>:<span class="string">&quot;admin&quot;</span>,</span><br><span class="line">       <span class="attr">&quot;admin_layer&quot;</span>:&#123;</span><br><span class="line">         </span><br><span class="line">       &#125;</span><br><span class="line">     &#125;</span><br><span class="line">   ]</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+</li>
+<li><p>阶段3-code removal：     代码移除了，这个功能已经真正废弃掉了。</p>
+</li>
+</ul>
+<p>可以看到，经过前面两个阶段，各个版本升级之间，需要用于尽早迁移到新的特性上，满足使用需求。</p>
+<h2 id="3-重点说一下DiskLayer"><a href="#3-重点说一下DiskLayer" class="headerlink" title="3. 重点说一下DiskLayer"></a>3. 重点说一下DiskLayer</h2><p>DiskLayer的配置参数如下：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line"></span><br><span class="line"> <span class="attr">&quot;symlink_root&quot;</span>: <span class="string">&quot;...&quot;</span>,</span><br><span class="line"></span><br><span class="line"> <span class="attr">&quot;subdirectory&quot;</span>: <span class="string">&quot;...&quot;</span>,</span><br><span class="line"></span><br><span class="line"> <span class="attr">&quot;append_service_cluster&quot;</span>: <span class="string">&quot;...&quot;</span></span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<ul>
+<li>symlink_root     一般是执行一个链接目录，运行时的配置是由symlink_root+subdirectory指定的</li>
+<li>subdirectory：     举个例子。subdirectory为zone1，symlink_root为/envoy/runtime/current,     那么参数health_check.min_interval的参数是在目录/envoy/runtime/current/zone1/health_check/min_interval中。symlink_root     可以作为一个全局的配置中心，每个subdirectory可以作为不同的区域（或机房或AZ）的一个配置。</li>
+<li>append_service_cluster可以取true或false。subdirectory为zone1，symlink_root为/envoy/runtime/current,如果append_service_cluster是true，那么参数health_check.min_interval首先去目录/envoy/runtime/current/zone1/${cluster}/health_check/min_interval获取，如果这个文件不存在。再去/envoy/runtime/current/zone1/health_check/min_interval文件中获取。${cluster}的值是启动Envoy时候的参数–service-cluster指定的。</li>
+</ul>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>
+  </div>
+  <br/>
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <span id="busuanzi_container_site_pv">【本站总访问量】<span id="busuanzi_value_site_pv"></span>次</span>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E8%BF%90%E8%A1%8C%E6%97%B6%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-number">1.</span> <span class="toc-text">1. 运行时是什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E5%85%B8%E5%9E%8B%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">2.</span> <span class="toc-text">2. 典型应用场景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E9%87%8D%E7%82%B9%E8%AF%B4%E4%B8%80%E4%B8%8BDiskLayer"><span class="toc-number">3.</span> <span class="toc-text">3. 重点说一下DiskLayer</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&text=Envoy运行时Runtime配置"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&title=Envoy运行时Runtime配置"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&is_video=false&description=Envoy运行时Runtime配置"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Envoy运行时Runtime配置&body=Check out this article: https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&title=Envoy运行时Runtime配置"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&title=Envoy运行时Runtime配置"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&title=Envoy运行时Runtime配置"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&title=Envoy运行时Runtime配置"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&name=Envoy运行时Runtime配置&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://leejiancai.github.io/2021/03/05/Envoy%E8%BF%90%E8%A1%8C%E6%97%B6Runtime%E9%85%8D%E7%BD%AE/&t=Envoy运行时Runtime配置"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2099
+    LJC
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/search/">Search</a></li>
+         
+          <li><a href="/tags/">Tag</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GB2KNQXDVP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GB2KNQXDVP');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'https-leejiancai-github-io';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+
+</body>
+</html>
